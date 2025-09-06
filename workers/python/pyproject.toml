@@ -1,5 +1,5 @@
 [project]
-name = "AsyncTaskAPI"
+name = "async_worker" 
 version = "0.1.0"
 description = "Generic api for async tasks"
 readme = "README.md"
@@ -8,6 +8,13 @@ dependencies = [
     "loguru>=0.7.3",
     "aio-pika>=9.5.5",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["async_worker"]
 
 [tool.ruff]
 exclude = [
