@@ -8,7 +8,7 @@ from typing import Any
 
 from loguru import logger
 
-from worker import (
+from async_worker import (
     AsyncTaskInterface,
     AsyncWorkerRunner,
     HealthCheckConfig,

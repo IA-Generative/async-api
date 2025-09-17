@@ -1,11 +1,10 @@
 [project]
-name = "AsyncTaskAPI"
+name = "AsyncWorker"
 version = "0.1.0"
-description = "Generic api for async tasks"
+description = "Worker package for async tasks"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "loguru>=0.7.3",
     "aio-pika>=9.5.5",
 ]
 
@@ -114,13 +113,6 @@ docstring-code-line-length = "dynamic"
 [tool.ruff.lint.isort]
 known-first-party = ["api", "listener"]
 
-[dependency-groups]
-dev = [
-    "aiosqlite>=0.21.0",
-    "coverage>=7.9.2",
-    "pytest>=8.4.1",
-    "pytest-asyncio>=1.1.0",
-]
 
 [tool.coverage.run]
 source = [
