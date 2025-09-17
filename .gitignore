@@ -10,3 +10,9 @@ junit.xml
 .ruff_cache
 node_modules/
 package-lock.json
+*.egg-info/
+dist/
+build/
+*.log
+*.pot
+*.pyc

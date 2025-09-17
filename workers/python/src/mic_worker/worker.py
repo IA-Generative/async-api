@@ -2,70 +2,29 @@ import asyncio
 import json
 import logging
 import signal
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from contextvars import Context
-from dataclasses import dataclass
 from socket import gethostname
 from typing import Any
 
 import aio_pika
-from aio_pika.abc import AbstractIncomingMessage, AbstractRobustConnection
+from aio_pika.abc import AbstractChannel, AbstractIncomingMessage, AbstractQueue, AbstractRobustConnection
 
-logger = logging.getLogger(__name__)
+from .typed import (
+    AsyncTaskInterface,
+    HealthCheckConfig,
+    IncomingMessage,
+    IncomingMessageException,
+    Infinite,
+    OnShot,
+    SendException,
+    SyncTaskInterface,
+    TaskException,
+    TaskInterface,
+    WorkerMode,
+)
 
-
-@dataclass
-class IncomingMessage:
-    task_id: str
-    body: dict
-
-
-class AsyncTaskInterface:
-    async def execute(self, _incoming_message: IncomingMessage, progress: Callable[[float], Awaitable]) -> Any:  # noqa: ANN401
-        pass
-
-
-class SyncTaskInterface:
-    def execute(self, _incoming_message: IncomingMessage, progress: Callable[[float], None]) -> Any:  # noqa: ANN401
-        pass
-
-
-type TaskInterface = AsyncTaskInterface | SyncTaskInterface
-
-
-class OnShot:
-    pass
-
-
-@dataclass
-class Infinite:
-    concurrency: int = 1
-
-
-type WorkerMode = OnShot | Infinite
-
-
-# --------------------------------------
-# Typed exceptions
-# --------------------------------------
-
-
-class SendException(Exception):
-    pass
-
-
-class IncomingMessageException(Exception):
-    pass
-
-
-class TaskException(Exception):
-    pass
-
-
-@dataclass
-class HealthCheckConfig:
-    host: str
-    port: int
+logger: logging.Logger = logging.getLogger(name=__name__)
 
 
 class HealthCheckServer:
@@ -134,28 +93,28 @@ class AsyncWorkerRunner:
         self.health_check_config: HealthCheckConfig | None = health_check_config
 
     async def start(self) -> None:
-        logger.info("🛜 Connecting to rabbitmq...")
-        connection = await self.wait_for_connection()
-        channel = await connection.channel()
+        logger.info(msg="🛜 Connecting to rabbitmq...")
+        connection: aio_pika.RobustConnection = await self.wait_for_connection()
+        channel: AbstractChannel = await connection.channel()
         await channel.set_qos(prefetch_count=self.nbr_async_task)
-        queue = await channel.declare_queue(self.amqp_in_queue, durable=True)
-        logger.info("🤗 Successfully connected..")
+        queue: AbstractQueue = await channel.declare_queue(self.amqp_in_queue, durable=True)
+        logger.info(msg="🤗 Successfully connected..")
 
-        await queue.consume(self.message_handler)
+        await queue.consume(callback=self.message_handler)
 
         # Setup signal handler
-        loop = asyncio.get_running_loop()
-        loop.add_signal_handler(signal.SIGINT, self.stop)
-        loop.add_signal_handler(signal.SIGTERM, self.stop)
+        loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+        loop.add_signal_handler(sig=signal.SIGINT, callback=self.stop)
+        loop.add_signal_handler(sig=signal.SIGTERM, callback=self.stop)
 
         # HealthCheck
         if self.health_check_config is not None:
-            server = HealthCheckServer(self.health_check_config)
+            server = HealthCheckServer(config=self.health_check_config)
             await server.start()
 
         # Wait for a stop signal
         await self.stop_event.wait()
-        logger.info("💥 Stop signal received, closing connection.")
+        logger.info(msg="💥 Stop signal received, closing connection.")
         for task in self.consumer_task:
             task.cancel()
             await task
@@ -166,11 +125,10 @@ class AsyncWorkerRunner:
 
     async def message_handler(self, message: AbstractIncomingMessage) -> None:
         # Non blocking message processing (another task is created)
-        task = asyncio.create_task(
-            self.process_message(message),
+        task: asyncio.Task[None] = asyncio.create_task(
+            self.process_message(message=message),
             context=Context(),
         )
-        # nbr_consumers = len(self.consumer_task)
         self.consumer_task.append(task)
         task.add_done_callback(self.task_done_callback)
 
@@ -192,11 +150,11 @@ class AsyncWorkerRunner:
         return IncomingMessage(task_id=dict_body["task_id"], body=dict_body["data"]["body"])
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
-        task_id = None
+        task_id: str | None = None
         try:
-            str_body = message.body.decode()
-            incoming_message = self.parse_incomming_message(str_body)
-            task_id = incoming_message.task_id
+            str_body: str = message.body.decode()
+            incoming_message: IncomingMessage = self.parse_incomming_message(message=str_body)
+            task_id: str = incoming_message.task_id
 
             await self.send_start_message(task_id)
             result = await self.launch_task(task_id=task_id, incoming_message=incoming_message)
@@ -232,9 +190,7 @@ class AsyncWorkerRunner:
                 try:
                     await self.send_progress_message(task_id=task_id, progress=progress)
                 except SendException:
-                    logger.info("Unable to send  progress... {e}")
-
-            # Progress callback function sync
+                    logger.info("Unable to send progress... {e}")
 
             def progress_callback_sync(progress: float) -> None:
                 try:
@@ -242,62 +198,64 @@ class AsyncWorkerRunner:
                 except SendException:
                     logger.info("Unable to send progress... {e}")
 
-            task = self.task_provider()
+            task: AsyncTaskInterface | SyncTaskInterface = self.task_provider()
             if isinstance(task, AsyncTaskInterface):
                 logger.info("Running async task...")
-                result = await task.execute(incoming_message, progress_callback_async)
+                result = await task.execute(_incoming_message=incoming_message, progress=progress_callback_async)
             else:
                 logger.info("Running sync task...")
-                result = await asyncio.to_thread(lambda: task.execute(incoming_message, progress_callback_sync))
+                result = await asyncio.to_thread(
+                    lambda: task.execute(_incoming_message=incoming_message, progress=progress_callback_sync),
+                )
             return result
         except Exception as e:
             raise TaskException(e) from e
 
     async def send_start_message(self, task_id: str) -> None:
         try:
-            message = {
+            message: dict[str, str | dict[str, str]] = {
                 "task_id": task_id,
                 "data": {
                     "message_type": "started",
                     "hostname": gethostname(),
                 },
             }
-            json_encoded = json.dumps(message).encode()
-            await self.send_message(json_encoded)
+            json_encoded: bytes = json.dumps(obj=message).encode()
+            await self.send_message(message=json_encoded)
         except Exception as e:
             raise SendException(e) from e
 
     async def send_success_message(self, task_id: str, result: Any) -> None:  # noqa: ANN401
         try:
-            message = {
+            message: dict[str, str | dict[str, str | Any]] = {
                 "task_id": task_id,
                 "data": {
                     "message_type": "success",
                     "response": result,
                 },
             }
-            json_encoded = json.dumps(message).encode()
-            await self.send_message(json_encoded)
+            json_encoded: bytes = json.dumps(obj=message).encode()
+            await self.send_message(message=json_encoded)
         except Exception as e:
             raise SendException(e) from e
 
     async def send_progress_message(self, task_id: str, progress: float) -> None:
         try:
-            message = {
+            message: dict[str, str | dict[str, str | float]] = {
                 "task_id": task_id,
                 "data": {
                     "message_type": "progress",
                     "progress": progress,
                 },
             }
-            json_encoded = json.dumps(message).encode()
-            await self.send_message(json_encoded)
+            json_encoded: bytes = json.dumps(obj=message).encode()
+            await self.send_message(message=json_encoded)
         except Exception as e:
             raise SendException(e) from e
 
     async def send_failure_message(self, task_id: str, error_message: str) -> None:
         try:
-            message = {
+            message: dict[str, str | dict[str, str]] = {
                 "task_id": task_id,
                 "data": {
                     "message_type": "failure",
@@ -310,12 +268,12 @@ class AsyncWorkerRunner:
             raise SendException(e) from e
 
     async def send_message(self, message: bytes) -> None:
-        connection = await self.wait_for_connection()
-        channel = await connection.channel()
-        await channel.declare_queue(self.amqp_out_queue, durable=True)
+        connection: aio_pika.RobustConnection = await self.wait_for_connection()
+        channel: AbstractChannel = await connection.channel()
+        await channel.declare_queue(name=self.amqp_out_queue, durable=True)
         pika_message = aio_pika.Message(body=message)
-        await channel.default_exchange.publish(pika_message, routing_key=self.amqp_out_queue)
-        logger.info(f"Message {message} send on '{self.amqp_out_queue}'.")
+        await channel.default_exchange.publish(message=pika_message, routing_key=self.amqp_out_queue)
+        logger.info(msg=f"Message {message} send on '{self.amqp_out_queue}'.")
         await channel.close()
         await connection.close()
 

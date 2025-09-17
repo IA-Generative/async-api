@@ -175,6 +175,21 @@ api:
     # @section -- Api.listener
     args: []
     # @ Section -- Api.listener
+    resources:
+      requests:
+        # -- Memory request for the listener container.
+        # @section -- Api.listener
+        memory: "128Mi"
+        # -- CPU request for the listener container.
+        # @section -- Api.listener
+        cpu: "100m"
+      limits:
+        # -- Memory limit for the listener container.
+        # @section -- Api.listener
+        memory: "512Mi"
+        # -- CPU limit for the listener container.
+        # @section -- Api.listener
+        cpu: "300m"
     # Configure probe settings for the listener container.
     probes:
       # @ Section -- Api.listener

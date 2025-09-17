@@ -8,7 +8,7 @@ from typing import Any
 
 from loguru import logger
 
-from async_worker import (
+from mic_worker import (
     AsyncTaskInterface,
     AsyncWorkerRunner,
     HealthCheckConfig,
@@ -80,9 +80,9 @@ class MyAsyncTask(AsyncTaskInterface):
         if body["mustSucceed"]:
             time = body["sleep"]
             logger.info(f"Traitement en cours... ({time}s)")
-            await asyncio.sleep(time / 2)
+            await asyncio.sleep(delay=time / 2)
             await progress(0.3)
-            await asyncio.sleep(time / 2)
+            await asyncio.sleep(delay=time / 2)
             await progress(0.6)
         else:
             # Exception "fonctionnelle", le message ne sera pas retraité, la tâche aura le status failure
@@ -115,6 +115,5 @@ async def main() -> None:
     logger.info("Stopped.")
 
 
-# Main
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main=main())

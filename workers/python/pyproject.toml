@@ -1,5 +1,5 @@
 [project]
-name = "AsyncWorker"
+name = "mic-worker"
 version = "0.1.0"
 description = "Worker package for async tasks"
 readme = "README.md"
@@ -7,6 +7,10 @@ requires-python = ">=3.13"
 dependencies = [
     "aio-pika>=9.5.5",
 ]
+
+[project.urls]
+Repository = "https://github.com/titigmr/async-api"
+Documentation = "https://github.com/titigmr/async-api/workers/python/README.md"
 
 [tool.ruff]
 exclude = [
