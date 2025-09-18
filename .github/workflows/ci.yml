@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+    - opened
+    - reopened
+    - synchronize
+    - ready_for_review
+    branches:
+    - "**"
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: 3.x
+
+jobs:
+  expose-vars:
+    runs-on: ubuntu-24.04
+    if: ${{ !github.event.pull_request.draft }}
+    outputs:
+      PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+    steps:
+    - name: Exposing env vars
+      run: echo "Exposing env vars"
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+    needs:
+    - expose-vars
+    with:
+      PYTHON_VERSION: ${{ needs.expose-vars.outputs.PYTHON_VERSION }}
+
+  unit-tests:
+    uses: ./.github/workflows/unit-tests.yml
+    needs:
+    - expose-vars
+    with:
+      PYTHON_VERSION: ${{ needs.expose-vars.outputs.PYTHON_VERSION }}
+
+  # Workaround for required status check in protection branches (see. https://github.com/orgs/community/discussions/13690)
+  all-jobs-passed:
+    name: Check jobs status
+    runs-on: ubuntu-24.04
+    if: ${{ always() }}
+    needs:
+    - expose-vars
+    - lint
+    - unit-tests
+    steps:
+    - name: Check status of all required jobs
+      run: |-
+        NEEDS_CONTEXT='${{ toJson(needs) }}'
+        JOB_IDS=$(echo "$NEEDS_CONTEXT" | jq -r 'keys[]')
+        for JOB_ID in $JOB_IDS; do
+          RESULT=$(echo "$NEEDS_CONTEXT" | jq -r ".[\"$JOB_ID\"].result")
+          echo "$JOB_ID job result: $RESULT"
+          if [[ $RESULT != "success" && $RESULT != "skipped" ]]; then
+            echo "***"
+            echo "Error: The $JOB_ID job did not pass."
+            exit 1
+          fi
+        done
+        echo "All jobs passed or were skipped."
