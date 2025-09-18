@@ -38,10 +38,10 @@ install-uv: ## Installe uv
 	fi
 
 lint: install ## Lint le code du dépôt avec ruff
-	uv run ruff check .
+	uvx ruff check .
 
 format: install ## Formate le code avec ruff
-	uv run ruff format .
+	uvx ruff format .
 
 bump-patch: ## Bump version patch
 	uv run cz bump --increment patch
@@ -101,10 +101,10 @@ migration-current: ## Affiche la révision actuelle de la base de données
 migration-history: ## Affiche l'historique détaillé des migrations
 	docker compose exec api alembic history --verbose
 
-test: ## Lance les tests avec pytest
-	uv run pytest -v
+test: install ## Lance les tests avec pytest
+	uv run pytest -v -s --cov=api --cov=listener --cov=src  --cov-report=term-missing 
 
-test-specific: ## Lance un test (ex: make test-specific FILE=tests/api/repositories/test_task_repository.py)
+test-specific: install ## Lance un test (ex: make test-specific FILE=tests/api/repositories/test_task_repository.py)
 	uv run pytest -v $(FILE)
 
 coverage: ## Lance les tests avec couverture de code
