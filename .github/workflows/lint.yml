@@ -1,0 +1,34 @@
+name: Lint
+
+on:
+  workflow_call:
+    inputs:
+      PYTHON_VERSION:
+        description: Python version used to run tests
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      PYTHON_VERSION:
+        description: Python version used to run tests
+        required: true
+        type: string
+        default: 3.X
+
+jobs:
+  tests:
+    name: Lint code
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.PYTHON_VERSION }}
+
+    - name: Run lint
+      run: make lint
