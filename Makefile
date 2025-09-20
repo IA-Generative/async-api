@@ -38,10 +38,10 @@ install-uv: ## Installe uv
 	fi
 
 lint: install ## Lint le code du dépôt avec ruff
-	uvx ruff check .
+	uv run ruff check .
 
 format: install ## Formate le code avec ruff
-	uvx ruff format .
+	uv run ruff format .
 
 bump-patch: ## Bump version patch
 	uv run cz bump --increment patch
