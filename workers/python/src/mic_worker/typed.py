@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeAlias
 
 
 @dataclass
@@ -34,7 +34,7 @@ class SyncTaskInterface:
         pass
 
 
-type TaskInterface = AsyncTaskInterface | SyncTaskInterface
+TaskInterface: TypeAlias = AsyncTaskInterface | SyncTaskInterface
 
 
 class OnShot:
@@ -46,7 +46,7 @@ class Infinite:
     concurrency: int = 1
 
 
-type WorkerMode = OnShot | Infinite
+WorkerMode: TypeAlias = OnShot | Infinite
 
 
 class SendException(Exception):
