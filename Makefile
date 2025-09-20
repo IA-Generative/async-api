@@ -102,7 +102,7 @@ migration-history: ## Affiche l'historique détaillé des migrations
 	docker compose exec api alembic history --verbose
 
 test: install ## Lance les tests avec pytest
-	uv run pytest -v -s --cov=api --cov=listener --cov=src  --cov-report=term-missing 
+	uv run pytest -v -s --cov=api --cov=listener --cov=src  --cov-report=term-missing --disable-warnings
 
 test-specific: install ## Lance un test (ex: make test-specific FILE=tests/api/repositories/test_task_repository.py)
 	uv run pytest -v $(FILE)
