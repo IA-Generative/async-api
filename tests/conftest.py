@@ -2,17 +2,13 @@ import os
 
 import pytest_asyncio
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from api.core.database import Base
 
 
 @pytest_asyncio.fixture(scope="function", autouse=True)
-async def async_db_session():
+async def async_db_session():  # noqa: ANN201
     async_engine = create_async_engine("sqlite+aiosqlite:///demo.db", echo=True)
 
     TestingAsyncSessionLocal = async_sessionmaker(
@@ -33,4 +29,4 @@ async def async_db_session():
         await trans.rollback()
     await async_session.close()
     await connection.close()
-    os.remove("demo.db")
+    os.remove("demo.db")  # noqa: PTH107

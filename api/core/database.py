@@ -12,6 +12,6 @@ AsyncSessionLocal = async_sessionmaker(bind=engine, autoflush=False, class_=Asyn
 Base: Any = declarative_base()
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:  # noqa: UP043
     async with AsyncSessionLocal() as session:
         yield session

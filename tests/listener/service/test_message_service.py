@@ -1,4 +1,5 @@
 import datetime
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Never
 from unittest.mock import Mock
 
@@ -34,7 +35,7 @@ def message_service() -> MessageService:
         start_date=datetime.datetime.now(),
     )
 
-    async def get_task_by_id(task_id, service_name):
+    async def get_task_by_id(task_id: str, service_name: str) -> Task | None:  # noqa: ARG001
         if task_id == "task_found":
             return task_found
         if task_id == "task_found_with_callback":
@@ -64,7 +65,7 @@ def message_service() -> MessageService:
 # START
 # ---------------------
 @pytest.mark.asyncio
-async def test_process_start_message_error_unmarshall(message_service) -> None:
+async def test_process_start_message_error_unmarshall(message_service: MessageService) -> None:
     with pytest.raises(MessageServiceError):
         await message_service.process('{"value":"bob"}', "svc_name")
     message_service.session.rollback.assert_called()
@@ -72,7 +73,7 @@ async def test_process_start_message_error_unmarshall(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_start_message_task_not_found(message_service) -> None:
+async def test_process_start_message_task_not_found(message_service: MessageService) -> None:
     with pytest.raises(MessageServiceError):
         await message_service.process(
             '{"task_id":"task_not_found", "data": {"message_type":"started","hostname":"muhost"}}',
@@ -83,7 +84,7 @@ async def test_process_start_message_task_not_found(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_start_message_task_ok(message_service) -> None:
+async def test_process_start_message_task_ok(message_service: MessageService) -> None:
     await message_service.process(
         '{"task_id":"task_found", "data": {"message_type":"started","hostname":"myhost"}}',
         "svc_name",
@@ -101,7 +102,7 @@ async def test_process_start_message_task_ok(message_service) -> None:
 # PROGRESS
 # ---------------------
 @pytest.mark.asyncio
-async def test_process_progress_message_task_not_found(message_service) -> None:
+async def test_process_progress_message_task_not_found(message_service: MessageService) -> None:
     with pytest.raises(MessageServiceError):
         await message_service.process(
             '{"task_id":"task_not_found", "data": {"message_type":"progress","progress":42}}',
@@ -112,7 +113,7 @@ async def test_process_progress_message_task_not_found(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_progress_message_task_ok(message_service) -> None:
+async def test_process_progress_message_task_ok(message_service: MessageService) -> None:
     await message_service.process(
         '{"task_id":"task_found", "data": {"message_type":"progress","progress":42}}',
         "svc_name",
@@ -127,7 +128,7 @@ async def test_process_progress_message_task_ok(message_service) -> None:
 # SUCCESS
 # ---------------------
 @pytest.mark.asyncio
-async def test_process_success_message_task_not_found(message_service) -> None:
+async def test_process_success_message_task_not_found(message_service: MessageService) -> None:
     with pytest.raises(MessageServiceError):
         await message_service.process(
             '{"task_id":"task_not_found", "data": {"message_type":"success","response":{}}}',
@@ -138,7 +139,7 @@ async def test_process_success_message_task_not_found(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_success_message_task_ok(message_service) -> None:
+async def test_process_success_message_task_ok(message_service: MessageService) -> None:
     await message_service.process(
         '{"task_id":"task_found", "data": {"message_type":"success","response":{}}}',
         "svc_name",
@@ -148,8 +149,8 @@ async def test_process_success_message_task_ok(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_success_message_with_callback_ok(message_service) -> None:
-    async def notification_ok(callback, message) -> None:
+async def test_process_success_message_with_callback_ok(message_service: MessageService) -> None:
+    async def notification_ok(callback, message) -> None:  # noqa ANN001
         pass
 
     # async def notification_ko(callback, message): raise NotificationException
@@ -171,9 +172,9 @@ async def test_process_success_message_with_callback_ok(message_service) -> None
 
 
 @pytest.mark.asyncio
-async def test_process_success_message_with_callback_ko(message_service) -> None:
+async def test_process_success_message_with_callback_ko(message_service: MessageService) -> None:
     # async def notification_ok(callback, message): pass
-    async def notification_ko(callback, message) -> Never:
+    async def notification_ko(callback, message) -> Never:  # noqa ANN001
         raise NotificationException
 
     message_service.notification_service.notify.side_effect = notification_ko
@@ -196,7 +197,7 @@ async def test_process_success_message_with_callback_ko(message_service) -> None
 # FAILURE
 # ---------------------
 @pytest.mark.asyncio
-async def test_process_failure_message_task_not_found(message_service) -> None:
+async def test_process_failure_message_task_not_found(message_service: MessageService) -> None:
     with pytest.raises(MessageServiceError):
         await message_service.process(
             '{"task_id":"task_not_found", "data": {"message_type":"failure","error_message":"Arghh!"}}',
@@ -207,7 +208,7 @@ async def test_process_failure_message_task_not_found(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_failure_message_task_ok(message_service) -> None:
+async def test_process_failure_message_task_ok(message_service: MessageService) -> None:
     await message_service.process(
         '{"task_id":"task_found", "data": {"message_type":"failure","error_message":"Arghh!"}}',
         "svc_name",
@@ -217,8 +218,8 @@ async def test_process_failure_message_task_ok(message_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_failure_message_with_callback_ok(message_service) -> None:
-    async def notification_ok(callback, message) -> None:
+async def test_process_failure_message_with_callback_ok(message_service: MessageService) -> None:
+    async def notification_ok(callback, message) -> None:  # noqa ANN001
         pass
 
     # async def notification_ko(callback, message): raise NotificationException
@@ -240,9 +241,9 @@ async def test_process_failure_message_with_callback_ok(message_service) -> None
 
 
 @pytest.mark.asyncio
-async def test_process_failure_message_with_callback_ko(message_service) -> None:
+async def test_process_failure_message_with_callback_ko(message_service: MessageService) -> None:
     # async def notification_ok(callback, message): pass
-    async def notification_ko(callback, message) -> Never:
+    async def notification_ko(callback: Callable, message: dict) -> Never:  # noqa: ARG001
         raise NotificationException
 
     message_service.notification_service.notify.side_effect = notification_ko

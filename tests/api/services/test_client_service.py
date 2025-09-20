@@ -39,7 +39,7 @@ def client_config_repo_mock() -> Mock:
     return client_config_repo_mock
 
 
-def test_is_valid_client_id_with_secret(client_config_repo_mock) -> None:
+def test_is_valid_client_id_with_secret(client_config_repo_mock: Mock) -> None:
     service_service = ClientService(client_config_repo_mock)
 
     # Test with a valid client ID and secret
@@ -53,7 +53,7 @@ def test_is_valid_client_id_with_secret(client_config_repo_mock) -> None:
     assert not service_service.is_valid_client_id("client1_id", "bad_secret")
 
 
-def test_get_client_authorization_for_service(client_config_repo_mock) -> None:
+def test_get_client_authorization_for_service(client_config_repo_mock: Mock) -> None:
     service_service = ClientService(client_config_repo_mock)
 
     # Existing client without authorization

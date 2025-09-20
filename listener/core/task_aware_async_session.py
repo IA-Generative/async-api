@@ -10,9 +10,6 @@ ctx_db_session: ContextVar[AsyncSession] = ContextVar("db_session")
 
 # Dynamic proxy for AsyncSession
 class TaskAwareAsyncSession:
-    def __init__(self) -> None:
-        pass
-
     @staticmethod
     def _get_wrapped_session() -> AsyncSession:
         # New task: new session
@@ -24,5 +21,5 @@ class TaskAwareAsyncSession:
             logger.debug(f"Task session {id(session)} created")
             return session
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> str:
         return getattr(self._get_wrapped_session(), name)

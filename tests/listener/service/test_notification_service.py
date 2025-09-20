@@ -7,7 +7,7 @@ from listener.services.notifier_service import BaseNotifier, NotificationExcepti
 
 @pytest.fixture
 def notification_service() -> NotificationService:
-    async def notify(callback, dict) -> None:
+    async def notify(callback: dict, message: dict) -> None:
         pass
 
     a_notifier: BaseNotifier = Mock()
@@ -22,7 +22,7 @@ def notification_service() -> NotificationService:
 
 
 @pytest.mark.asyncio
-async def test_notify_a(notification_service) -> None:
+async def test_notify_a(notification_service: NotificationService) -> None:
     callback: dict = {"message_type": "a"}
     await notification_service.notify(callback=callback, message={})
     notification_service.notifiers[0].notify.assert_called()
@@ -30,7 +30,7 @@ async def test_notify_a(notification_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_notify_b(notification_service) -> None:
+async def test_notify_b(notification_service: NotificationService) -> None:
     callback: dict = {"message_type": "b"}
     await notification_service.notify(callback=callback, message={})
     notification_service.notifiers[0].notify.assert_not_called()
@@ -38,7 +38,7 @@ async def test_notify_b(notification_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_notify_failure(notification_service) -> None:
+async def test_notify_failure(notification_service: NotificationService) -> None:
     callback: dict = {"message_type": "c"}
     with pytest.raises(NotificationException):
         await notification_service.notify(callback=callback, message={})
