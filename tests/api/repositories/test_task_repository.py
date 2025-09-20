@@ -8,7 +8,7 @@ from api.schemas.task import TaskInfo
 
 
 @pytest.mark.asyncio
-async def test_should_create_new_task(async_db_session) -> None:
+async def test_should_create_new_task(async_db_session) -> None:  # noqa: ANN001
     repo = TaskRepository(async_db_session)
     task_info = TaskInfo(
         task_id="test_task",
@@ -23,7 +23,7 @@ async def test_should_create_new_task(async_db_session) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_task_by_id(async_db_session) -> None:
+async def test_get_task_by_id(async_db_session) -> None:  # noqa: ANN001
     repo = TaskRepository(async_db_session)
     task_info1 = TaskInfo(
         task_id="test_task1",
@@ -50,7 +50,7 @@ async def test_get_task_by_id(async_db_session) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_task_position_by_id(async_db_session) -> None:
+async def test_get_task_position_by_id(async_db_session) -> None:  # noqa: ANN001
     repo = TaskRepository(async_db_session)
     task_info = TaskInfo(
         task_id="test_task_run",
@@ -89,7 +89,7 @@ async def test_get_task_position_by_id(async_db_session) -> None:
 
 
 @pytest.mark.asyncio
-async def test_count_pending_tasks_for_service(async_db_session) -> None:
+async def test_count_pending_tasks_for_service(async_db_session) -> None:  # noqa: ANN001
     repo = TaskRepository(async_db_session)
     # 3 PENDING
     for i in range(3):
@@ -128,7 +128,7 @@ async def test_count_pending_tasks_for_service(async_db_session) -> None:
 
 
 @pytest.mark.asyncio
-async def test_count_pending_tasks_for_service_and_client(async_db_session) -> None:
+async def test_count_pending_tasks_for_service_and_client(async_db_session) -> None:  # noqa: ANN001
     repo = TaskRepository(async_db_session)
     # 3 PENDING (client à tester)
     for i in range(3):

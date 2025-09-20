@@ -74,12 +74,12 @@ def task_service() -> TaskService:
 
     # ----------
     # TASK-REPO
-    async def get_task_by_id(task_id: str, service: str) -> Task | None:
+    async def get_task_by_id(task_id: str, service: str) -> Task | None:  # noqa: ARG001
         if task_id == "valid_task":
             return Task(status=TaskStatus.IN_PROGRESS, task_id="69", response=None)
         return None
 
-    async def get_task_position_by_id(task_id: str, service: str) -> int | None:
+    async def get_task_position_by_id(task_id: str, service: str) -> int | None:  # noqa: ARG001
         return 42
 
     task_repository_mock.get_task_by_id.side_effect = get_task_by_id
@@ -92,7 +92,7 @@ def task_service() -> TaskService:
 
     # ----------
     # Queue sender
-    async def send_task_to_queue(queue, task_data, service) -> None:
+    async def send_task_to_queue(queue, task_data, service) -> None:  # noqa: ANN001
         pass
 
     queue_sender_mock.send_task_to_queue = send_task_to_queue
@@ -105,39 +105,39 @@ def task_service() -> TaskService:
     )
 
 
-def test_check_service_schema_with_no_schema(task_service) -> None:
+def test_check_service_schema_with_no_schema(task_service: TaskService) -> None:
     task_service.check_service_schema("svc_no_schema", {})
 
 
-def test_check_service_schema_with_schema_ok(task_service) -> None:
+def test_check_service_schema_with_schema_ok(task_service: TaskService) -> None:
     task_service.check_service_schema("svc_schema", {"sleep": 12})
 
 
-def test_check_service_schema_with_schema_ko(task_service) -> None:
+def test_check_service_schema_with_schema_ko(task_service: TaskService) -> None:
     with pytest.raises(BodyValidationError):
         task_service.check_service_schema("svc_schema", {"bob": "leponge"})
 
 
 @pytest.mark.asyncio
-async def test_pool_task_with_invalid_service(task_service) -> None:
+async def test_pool_task_with_invalid_service(task_service: TaskService) -> None:
     with pytest.raises(ServiceNotFound):
         await task_service.poll_task("task", "invalid_svc", "bob")
 
 
 @pytest.mark.asyncio
-async def test_pool_task_with_invalid_client_authorization(task_service) -> None:
+async def test_pool_task_with_invalid_client_authorization(task_service: TaskService) -> None:
     with pytest.raises(Forbidden):
         await task_service.poll_task("task", "svc_no_schema", "bob")
 
 
 @pytest.mark.asyncio
-async def test_pool_task_not_found(task_service) -> None:
+async def test_pool_task_not_found(task_service: TaskService) -> None:
     task = await task_service.poll_task("invalid_task", "svc_no_schema", "client_with_auth_and_no_quota")
     assert task is None
 
 
 @pytest.mark.asyncio
-async def test_pool_task_ok(task_service) -> None:
+async def test_pool_task_ok(task_service: TaskService) -> None:
     task = await task_service.poll_task("valid_task", "svc_no_schema", "client_with_auth_and_no_quota")
     assert task is not None
     assert task.status == TaskStatus.IN_PROGRESS
@@ -145,24 +145,24 @@ async def test_pool_task_ok(task_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_submit_task_with_invalid_service(task_service) -> None:
+async def test_submit_task_with_invalid_service(task_service: TaskService) -> None:
     task = TaskRequest(body={}, callback=None)
     with pytest.raises(ServiceNotFound):
         await task_service.submit_task(task, "invalid_svc", "bob")
 
 
 @pytest.mark.asyncio
-async def test_submit_task_with_invalid_client_authorization(task_service) -> None:
+async def test_submit_task_with_invalid_client_authorization(task_service: TaskService) -> None:
     task = TaskRequest(body={}, callback=None)
     with pytest.raises(Forbidden):
         await task_service.submit_task(task, "svc_no_schema", "bob")
 
 
 @pytest.mark.asyncio
-async def test_submit_task_with_service_quota_ko(task_service) -> None:
+async def test_submit_task_with_service_quota_ko(task_service: TaskService) -> None:
     task = TaskRequest(body={}, callback=None)
 
-    async def count_pending_tasks_for_service(service) -> int:
+    async def count_pending_tasks_for_service(service) -> int:  # noqa: ARG001, ANN001
         return 10
 
     task_service.task_repository.count_pending_tasks_for_service = count_pending_tasks_for_service
@@ -172,15 +172,15 @@ async def test_submit_task_with_service_quota_ko(task_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_submit_task_with_user_quota_ko(task_service) -> None:
+async def test_submit_task_with_user_quota_ko(task_service: TaskService) -> None:
     task = TaskRequest(body={}, callback=None)
 
-    async def count_pending_tasks_for_service(service) -> int:
+    async def count_pending_tasks_for_service(service) -> int:  # noqa: ARG001, ANN001
         return 9
 
     task_service.task_repository.count_pending_tasks_for_service = count_pending_tasks_for_service
 
-    async def count_pending_tasks_for_service_and_client(service, client_id) -> int:
+    async def count_pending_tasks_for_service_and_client(service, client_id: str) -> int:  # noqa: ARG001, ANN001
         return 11
 
     task_service.task_repository.count_pending_tasks_for_service_and_client = count_pending_tasks_for_service_and_client
@@ -190,15 +190,15 @@ async def test_submit_task_with_user_quota_ko(task_service) -> None:
 
 
 @pytest.mark.asyncio
-async def test_submit_task_with_user_quota_ok(task_service) -> None:
+async def test_submit_task_with_user_quota_ok(task_service: TaskService) -> None:
     task = TaskRequest(body={}, callback=None)
 
-    async def count_pending_tasks_for_service(service) -> int:
+    async def count_pending_tasks_for_service(service) -> int:  # noqa: ARG001, ANN001
         return 9
 
     task_service.task_repository.count_pending_tasks_for_service = count_pending_tasks_for_service
 
-    async def count_pending_tasks_for_service_and_client(service, client_id) -> int:
+    async def count_pending_tasks_for_service_and_client(service, client_id: str) -> int:  # noqa: ARG001, ANN001
         return 9
 
     task_service.task_repository.count_pending_tasks_for_service_and_client = count_pending_tasks_for_service_and_client

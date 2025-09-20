@@ -23,7 +23,7 @@ class TestConfigComponents:
                 "DATABASE_URL": "postgresql+asyncpg://custom-user:custom-pass@custom-db:9999/custom-tasks",
             },
         ):
-            print(os.environ.get("DB_HOST"))  # Debugging print
+            print(os.environ.get("DB_HOST"))  # noqa: T201
             settings = Settings()
             url = str(settings.database_url_from_components)
             assert url == "postgresql+asyncpg://custom-user:***@custom-db:9999/custom-tasks"

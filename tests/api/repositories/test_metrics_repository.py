@@ -9,7 +9,7 @@ from api.schemas.task import TaskInfo
 
 
 @pytest.mark.asyncio
-async def test_count_tasks_per_status_and_service(async_db_session) -> None:
+async def test_count_tasks_per_status_and_service(async_db_session) -> None:  # noqa: ANN001
     dataset: dict[str, dict[str, int]] = {
         "svc1": {
             TaskStatus.PENDING: 5,
@@ -34,7 +34,7 @@ async def test_count_tasks_per_status_and_service(async_db_session) -> None:
 
 
 @pytest.mark.asyncio
-async def test_running_and_pending_tasks(async_db_session) -> None:
+async def test_running_and_pending_tasks(async_db_session) -> None:  # noqa: ANN001
     dataset: dict[str, dict[str, int]] = {
         "svc1": {
             TaskStatus.PENDING: 5,
@@ -61,7 +61,7 @@ async def test_running_and_pending_tasks(async_db_session) -> None:
     )
 
 
-async def create_dataset(async_session, dataset) -> None:
+async def create_dataset(async_session, dataset) -> None:  # noqa: ANN001
     repo = TaskRepository(async_session)
 
     for svc_name, statuses in dataset.items():

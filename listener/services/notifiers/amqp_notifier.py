@@ -16,7 +16,7 @@ class AmqpCallback(BaseModel):
 
 
 class AmqpNotifier(BaseNotifier):
-    def __init__(self, max_retries):
+    def __init__(self, max_retries: int) -> None:
         self.max_retries = max_retries
 
     def unmarshall_callback(self, callback: dict) -> AmqpCallback | None:
@@ -26,7 +26,7 @@ class AmqpNotifier(BaseNotifier):
             logger.debug(f"Failed to unmarshall callback: {e}")
             return None
 
-    def accept(self, callback: dict):
+    def accept(self, callback: dict) -> AmqpCallback | None:
         return self.unmarshall_callback(callback) is not None
 
     async def notify(self, callback: dict, message: dict) -> None:
@@ -42,7 +42,7 @@ class AmqpNotifier(BaseNotifier):
         amqp_callback: AmqpCallback,
         message: dict,
         retry: int,
-    ):
+    ) -> None:
         try:
             connection = await aio_pika.connect_robust(amqp_callback.url)
             async with connection:

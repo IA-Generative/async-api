@@ -9,7 +9,7 @@ class NotificationException(Exception):
 # Base Notifier
 # ---------------------------------
 class BaseNotifier:
-    def accept(self, callback: dict) -> bool:
+    def accept(self, callback: dict) -> bool:  # noqa: ARG002
         return False
 
     async def notify(self, callback: dict, message: dict) -> None:

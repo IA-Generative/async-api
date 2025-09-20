@@ -2,6 +2,7 @@ import asyncio
 from contextvars import Context
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from listener.core.task_aware_async_session import TaskAwareAsyncSession
 
@@ -28,7 +29,7 @@ async def test_create_session_inside_event_loop() -> None:
     assert inner1 == inner2
 
 
-async def get_inner_session(session_proxy: TaskAwareAsyncSession):
+async def get_inner_session(session_proxy: TaskAwareAsyncSession) -> AsyncSession:
     return session_proxy._get_wrapped_session()
 
 

@@ -18,7 +18,7 @@ def get_task_name() -> str:
 class InterceptHandler(logging.Handler):
     """Handler pour intercepter les logs du module logging standard et les rediriger vers loguru"""
 
-    def emit(self, record) -> None:
+    def emit(self, record) -> None:  # noqa: ANN001
         try:
             level = loguru_logger.level(record.levelname).name
         except ValueError:

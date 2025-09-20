@@ -21,7 +21,7 @@ class HttpCallback(BaseModel):
 
 
 class HttpNotifier(BaseNotifier):
-    def __init__(self, max_retries):
+    def __init__(self, max_retries: int) -> None:
         self.max_retries = max_retries
 
     def unmarshall_callback(self, callback: dict) -> HttpCallback | None:
@@ -31,10 +31,10 @@ class HttpNotifier(BaseNotifier):
             logger.debug(f"Failed to unmarshall callback: {e}")
             return None
 
-    def accept(self, callback: dict):
+    def accept(self, callback: dict) -> HttpCallback | None:
         return self.unmarshall_callback(callback) is not None
 
-    async def notify(self, callback: dict, message: dict):
+    async def notify(self, callback: dict, message: dict):  # noqa: ANN201
         http_callback = self.unmarshall_callback(callback)
         if http_callback is None:
             raise NotificationException(
@@ -50,7 +50,7 @@ class HttpNotifier(BaseNotifier):
     ) -> None:
         connector = aiohttp.TCPConnector(ssl=self.ssl_context(http_callback.skip_tls))
         try:
-            async with aiohttp.ClientSession(connector=connector) as session:
+            async with aiohttp.ClientSession(connector=connector) as session:  # noqa: SIM117
                 async with session.post(http_callback.url, data=message) as response:
                     if response.status != 200:
                         raise NotificationException(
@@ -72,7 +72,7 @@ class HttpNotifier(BaseNotifier):
                 e,
             ) from e
 
-    def ssl_context(self, skip_tls: bool) -> ssl.SSLContext:
+    def ssl_context(self, *, skip_tls: bool) -> ssl.SSLContext:
         ssl_context = ssl.create_default_context()
         if skip_tls:
             ssl_context.check_hostname = False

@@ -27,7 +27,7 @@ class ClientConfig:
         self.authorizations = authorizations or {}
 
     def __repr__(self) -> str:
-        return f"ClientConfig(client_id={self.client_id}, client_secret={self.client_secret}, authorizations={self.authorizations})"
+        return f"ClientConfig(client_id={self.client_id}, client_secret={self.client_secret}, authorizations={self.authorizations})"  # noqa: E501
 
 
 class ClientsConfigException(Exception):

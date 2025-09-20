@@ -28,25 +28,25 @@ def services_config_repo_mock() -> ServicesConfigRepository:
     return services_config_repo_mock
 
 
-def test_check_service_exists(services_config_repo_mock) -> None:
+def test_check_service_exists(services_config_repo_mock: ServicesConfigRepository) -> None:
     service_service = ServiceService(services_config_repo_mock)
 
     # Test with an existing service
     service_service.check_service_exists("example")
 
     # Test with a non-existing service
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: PT011, B017
         service_service.check_service_exists("non_existing_service")
 
 
-def test_list_services_names(services_config_repo_mock) -> None:
+def test_list_services_names(services_config_repo_mock: ServicesConfigRepository) -> None:
     service_service = ServiceService(services_config_repo_mock)
     services = service_service.list_services_names()
     assert "example" in services
     assert "example2" in services
 
 
-def test_list_all(services_config_repo_mock) -> None:
+def test_list_all(services_config_repo_mock: ServicesConfigRepository) -> None:
     service_service = ServiceService(services_config_repo_mock)
 
     services = service_service.list_all()
@@ -61,13 +61,13 @@ def test_list_all(services_config_repo_mock) -> None:
     assert example2.json_schema is None
 
 
-def test_get_service_ok(services_config_repo_mock) -> None:
+def test_get_service_ok(services_config_repo_mock: ServicesConfigRepository) -> None:
     service_service = ServiceService(services_config_repo_mock)
 
     assert service_service.get_service("example") is not None
 
 
-def test_get_service_ko(services_config_repo_mock) -> None:
+def test_get_service_ko(services_config_repo_mock: ServicesConfigRepository) -> None:
     service_service = ServiceService(services_config_repo_mock)
 
     assert service_service.get_service("example666") is None
