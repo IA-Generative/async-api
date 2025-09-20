@@ -2,20 +2,21 @@ import asyncio
 import logging
 import os
 import sys
-from collections.abc import Awaitable, Callable
 from time import sleep
 from typing import Any
 
 from loguru import logger
 
-from mic_worker import (
+from mic_worker.typed import (
+    AsyncProgressProtocol,
     AsyncTaskInterface,
-    AsyncWorkerRunner,
     HealthCheckConfig,
     IncomingMessage,
     Infinite,
+    SyncProgressProtocol,
     SyncTaskInterface,
 )
+from mic_worker.worker import AsyncWorkerRunner
 
 
 # --------------------------------
@@ -26,7 +27,7 @@ from mic_worker import (
 class InterceptHandler(logging.Handler):
     """Handler pour intercepter les logs du module logging standard et les rediriger vers loguru"""
 
-    def emit(self, record: logging.LogRecord) -> None:  # noqa: PLR6301
+    def emit(self, record: logging.LogRecord) -> None:
         try:
             level = logger.level(record.levelname).name
         except ValueError:
@@ -51,7 +52,7 @@ logger.add(sys.stdout, level="INFO")
 
 
 class MySyncTask(SyncTaskInterface):
-    def execute(self, incoming_message: IncomingMessage, progress: Callable[[float], None]) -> Any:  # noqa: ANN401 PLR6301
+    def execute(self, incoming_message: IncomingMessage, progress: SyncProgressProtocol) -> Any:  # noqa: ANN401
         # task_id = incoming_message.task_id
         body: dict[Any, Any] = incoming_message.body
         logging.info("Task_id: {task_id}")
@@ -59,9 +60,9 @@ class MySyncTask(SyncTaskInterface):
             time = body["sleep"]
             logger.info(f"Traitement en cours... ({time}s)")
             sleep(time / 2)
-            progress(30.0)
+            progress(progress=0.3, payload=None)
             sleep(time / 2)
-            progress(30.0)
+            progress(progress=0.6, payload=None)
         else:
             # Exception "fonctionnelle", le message ne sera pas retraité, la tâche aura le status failure
             raise Exception("Argh")
@@ -73,7 +74,7 @@ class MySyncTask(SyncTaskInterface):
 # "utilisateur" (Async)
 # -------------------------
 class MyAsyncTask(AsyncTaskInterface):
-    async def execute(self, incoming_message: IncomingMessage, progress: Callable[[float], Awaitable]) -> Any:  # noqa: ANN401 PLR6301
+    async def execute(self, incoming_message: IncomingMessage, progress: AsyncProgressProtocol) -> Any:  # noqa: ANN401
         # task_id = incoming_message.task_id
         body: dict[Any, Any] = incoming_message.body
 
@@ -81,9 +82,9 @@ class MyAsyncTask(AsyncTaskInterface):
             time = body["sleep"]
             logger.info(f"Traitement en cours... ({time}s)")
             await asyncio.sleep(delay=time / 2)
-            await progress(0.3)
+            await progress(progress=0.3, payload=None)
             await asyncio.sleep(delay=time / 2)
-            await progress(0.6)
+            await progress(progress=0.6, payload=None)
         else:
             # Exception "fonctionnelle", le message ne sera pas retraité, la tâche aura le status failure
             raise Exception("Argh")

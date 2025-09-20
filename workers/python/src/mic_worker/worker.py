@@ -186,15 +186,15 @@ class AsyncWorkerRunner:
         result = None
         try:
             # Progress callback function async
-            async def progress_callback_async(progress: float) -> None:
+            async def progress_callback_async(progress: float, payload: dict | None = None) -> None:
                 try:
-                    await self.send_progress_message(task_id=task_id, progress=progress)
+                    await self.send_progress_message(task_id=task_id, progress=progress, payload=payload)
                 except SendException:
                     logger.info("Unable to send progress... {e}")
 
-            def progress_callback_sync(progress: float) -> None:
+            def progress_callback_sync(progress: float, payload: dict | None = None) -> None:
                 try:
-                    asyncio.run(self.send_progress_message(task_id=task_id, progress=progress))
+                    asyncio.run(self.send_progress_message(task_id=task_id, progress=progress, payload=payload))
                 except SendException:
                     logger.info("Unable to send progress... {e}")
 
@@ -239,13 +239,14 @@ class AsyncWorkerRunner:
         except Exception as e:
             raise SendException(e) from e
 
-    async def send_progress_message(self, task_id: str, progress: float) -> None:
+    async def send_progress_message(self, task_id: str, progress: float, payload: dict | None = None) -> None:
         try:
             message: dict[str, str | dict[str, str | float]] = {
                 "task_id": task_id,
                 "data": {
                     "message_type": "progress",
                     "progress": progress,
+                    "response": payload,
                 },
             }
             json_encoded: bytes = json.dumps(obj=message).encode()

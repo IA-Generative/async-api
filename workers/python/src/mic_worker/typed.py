@@ -1,6 +1,5 @@
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 
 @dataclass
@@ -9,13 +8,29 @@ class IncomingMessage:
     body: dict
 
 
+class AsyncProgressProtocol(Protocol):
+    async def __call__(self, *, progress: float, payload: dict | None = None) -> None: ...
+
+
+class SyncProgressProtocol(Protocol):
+    def __call__(self, *, progress: float, payload: dict | None = None) -> None: ...
+
+
 class AsyncTaskInterface:
-    async def execute(self, _incoming_message: IncomingMessage, progress: Callable[[float], Awaitable]) -> Any:  # noqa: ANN401
+    async def execute(
+        self,
+        _incoming_message: IncomingMessage,
+        progress: AsyncProgressProtocol,
+    ) -> Any:  # noqa: ANN401
         pass
 
 
 class SyncTaskInterface:
-    def execute(self, _incoming_message: IncomingMessage, progress: Callable[[float], None]) -> Any:  # noqa: ANN401
+    def execute(
+        self,
+        _incoming_message: IncomingMessage,
+        progress: SyncProgressProtocol,
+    ) -> Any:  # noqa: ANN401
         pass
 
 
