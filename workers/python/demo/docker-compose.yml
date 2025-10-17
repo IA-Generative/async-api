@@ -1,0 +1,36 @@
+services:
+  python-worker:
+    build: .
+    container_name: python-worker-demo
+    environment:
+      BROKER_URL: "amqp://kalo:kalo@broker:5672"
+      IN_QUEUE_NAME: "in_queue_python"
+      OUT_QUEUE_NAME: "out_queue_python"
+      WORKER_CONCURRENCY: "3"
+    develop:
+      watch:
+        - path: ./demo.py
+          action: sync+restart
+          target: /app/demo.py
+          ignore:
+            - "**/__pycache__/**"
+            - "**/*.pyc"
+        - path: ./docker-compose.yml
+          action: restart
+        - path: ./Dockerfile
+          action: rebuild
+        - path: ./pyproject.toml
+          action: rebuild
+    ports:
+      - "8000:8000"
+    networks:
+      - api_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  api_default:
+    external: true

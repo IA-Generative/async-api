@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol
 
 
 @dataclass
@@ -19,7 +19,7 @@ class SyncProgressProtocol(Protocol):
 class AsyncTaskInterface:
     async def execute(
         self,
-        _incoming_message: IncomingMessage,
+        incoming_message: IncomingMessage,
         progress: AsyncProgressProtocol,
     ) -> Any:  # noqa: ANN401
         pass
@@ -28,13 +28,13 @@ class AsyncTaskInterface:
 class SyncTaskInterface:
     def execute(
         self,
-        _incoming_message: IncomingMessage,
+        incoming_message: IncomingMessage,
         progress: SyncProgressProtocol,
     ) -> Any:  # noqa: ANN401
         pass
 
 
-TaskInterface: TypeAlias = AsyncTaskInterface | SyncTaskInterface
+type TaskInterface = AsyncTaskInterface | SyncTaskInterface
 
 
 class OnShot:
@@ -46,7 +46,7 @@ class Infinite:
     concurrency: int = 1
 
 
-WorkerMode: TypeAlias = OnShot | Infinite
+type WorkerMode = OnShot | Infinite
 
 
 class SendException(Exception):

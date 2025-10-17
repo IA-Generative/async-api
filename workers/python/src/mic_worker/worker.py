@@ -201,11 +201,11 @@ class AsyncWorkerRunner:
             task: AsyncTaskInterface | SyncTaskInterface = self.task_provider()
             if isinstance(task, AsyncTaskInterface):
                 logger.info("Running async task...")
-                result = await task.execute(_incoming_message=incoming_message, progress=progress_callback_async)
+                result = await task.execute(incoming_message=incoming_message, progress=progress_callback_async)
             else:
                 logger.info("Running sync task...")
                 result = await asyncio.to_thread(
-                    lambda: task.execute(_incoming_message=incoming_message, progress=progress_callback_sync),
+                    lambda: task.execute(incoming_message=incoming_message, progress=progress_callback_sync),
                 )
             return result
         except Exception as e:
@@ -241,7 +241,7 @@ class AsyncWorkerRunner:
 
     async def send_progress_message(self, task_id: str, progress: float, payload: dict | None = None) -> None:
         try:
-            message: dict[str, str | dict[str, str | float]] = {
+            message: dict[str, Any] = {
                 "task_id": task_id,
                 "data": {
                     "message_type": "progress",

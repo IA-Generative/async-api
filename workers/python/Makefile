@@ -53,6 +53,15 @@ shell: ## Ouvre un shell dans le conteneur
 test: ## Lance les tests
 	pytest tests/ -v
 
+test-cov: ## Lance les tests avec couverture
+	pytest tests/ -v --cov=src/mic_worker --cov-report=term-missing
+
+test-unit: ## Lance seulement les tests unitaires
+	pytest tests/test_typed.py tests/test_health_check.py tests/test_worker_runner.py -v
+
+test-integration: ## Lance seulement les tests d'intégration
+	pytest tests/test_integration.py -v
+
 lint: ## Lance le linting avec ruff
 	ruff check .
 	ruff format --check .

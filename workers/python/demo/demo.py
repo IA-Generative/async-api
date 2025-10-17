@@ -56,7 +56,7 @@ class MySyncTask(SyncTaskInterface):
         # task_id = incoming_message.task_id
         body: dict[Any, Any] = incoming_message.body
         logging.info("Task_id: {task_id}")
-        if body["mustSucceed"]:
+        if not body.get("failed"):
             time = body["sleep"]
             logger.info(f"Traitement en cours... ({time}s)")
             sleep(time / 2)
@@ -64,9 +64,8 @@ class MySyncTask(SyncTaskInterface):
             sleep(time / 2)
             progress(progress=0.6, payload=None)
         else:
-            # Exception "fonctionnelle", le message ne sera pas retraité, la tâche aura le status failure
             raise Exception("Argh")
-        return {"hello": "world"}  # Réponse
+        return {"hello": "world"}
 
 
 # -------------------------
@@ -75,24 +74,24 @@ class MySyncTask(SyncTaskInterface):
 # -------------------------
 class MyAsyncTask(AsyncTaskInterface):
     async def execute(self, incoming_message: IncomingMessage, progress: AsyncProgressProtocol) -> Any:  # noqa: ANN401
-        # task_id = incoming_message.task_id
+        task_id = incoming_message.task_id
+        logging.info(msg=f"Task_id: {task_id} --- <timestamp>")
         body: dict[Any, Any] = incoming_message.body
 
-        if body["mustSucceed"]:
-            time = body["sleep"]
+        if not body.get("failed"):
+            time = 10
             logger.info(f"Traitement en cours... ({time}s)")
             await asyncio.sleep(delay=time / 2)
             await progress(progress=0.3, payload=None)
             await asyncio.sleep(delay=time / 2)
             await progress(progress=0.6, payload=None)
         else:
-            # Exception "fonctionnelle", le message ne sera pas retraité, la tâche aura le status failure
             raise Exception("Argh")
         return {"hello": "world"}  # Réponse
 
 
-OUT_QUEUE_NAME = os.environ.get("OUT_QUEUE_NAME", "example_out_queue")
-IN_QUEUE_NAME = os.environ.get("IN_QUEUE_NAME", "in_queue_python")
+OUT_QUEUE_NAME = os.environ.get("OUT_QUEUE_NAME", "")
+IN_QUEUE_NAME = os.environ.get("IN_QUEUE_NAME", "")
 BROKER_URL = os.environ.get("BROKER_URL", "")
 WORKER_CONCURRENCY: int = int(os.environ.get("WORKER_CONCURRENCY", default="5"))
 if not BROKER_URL:

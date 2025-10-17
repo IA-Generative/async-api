@@ -5,9 +5,8 @@ This package provides classes and interfaces for creating asynchronous workers
 that process tasks from RabbitMQ queues.
 """
 
-from .worker import (
+from .typed import (
     AsyncTaskInterface,
-    AsyncWorkerRunner,
     HealthCheckConfig,
     IncomingMessage,
     Infinite,
@@ -16,8 +15,7 @@ from .worker import (
     TaskInterface,
     WorkerMode,
 )
-
-__version__ = "0.1.0"
+from .worker import AsyncWorkerRunner
 
 __all__: list[str] = [
     "AsyncTaskInterface",
