@@ -51,7 +51,7 @@ class HttpNotifier(BaseNotifier):
         connector = aiohttp.TCPConnector(ssl=self.ssl_context(http_callback.skip_tls))
         try:
             async with aiohttp.ClientSession(connector=connector) as session:  # noqa: SIM117
-                async with session.post(http_callback.url, data=message) as response:
+                async with session.post(http_callback.url, json=message) as response:
                     if response.status != 200:
                         raise NotificationException(
                             f"Bad response status '{response.status}' for callback: {http_callback}",

@@ -162,8 +162,8 @@ class MessageService:
         if callback_dict is not None:
             message = {
                 "task_id": task_id,
-                "status": TaskStatus.SUCCESS,
-                "submition_date": task.submition_date.isoformat(),
+                "status": TaskStatus.SUCCESS.value,
+                "submission_date": task.submition_date.isoformat(),
                 "start_date": task.start_date.isoformat() if task.start_date is not None else None,
                 "end_date": end_date.isoformat(),
                 "progress": 100.0,
@@ -198,12 +198,12 @@ class MessageService:
         if callback_dict is not None:
             message = {
                 "task_id": task_id,
-                "status": TaskStatus.FAILURE,
-                "submition_date": task.submition_date.isoformat(),
+                "status": TaskStatus.FAILURE.value,
+                "submission_date": task.submition_date.isoformat(),
                 "start_date": task.start_date.isoformat() if task.start_date is not None else None,
                 "end_date": end_date.isoformat(),
                 "progress": task.progress,
-                "error_message": data.error_message,
+                "response": {"error_message": data.error_message},
             }
             try:
                 await self.notification_service.notify(callback_dict, message)
