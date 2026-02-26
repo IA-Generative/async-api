@@ -55,6 +55,7 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "workers",
 ]
 
 line-length = 120
