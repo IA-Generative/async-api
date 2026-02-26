@@ -15,7 +15,6 @@ H: float = 60.0 * MN
 
 
 class MetricsService:
-
     """Service for managing Prometheus metrics related to tasks.
     This service provides methods to update custom metrics for tasks, including
     pending, running, success, and failure counts, as well as latency histograms.

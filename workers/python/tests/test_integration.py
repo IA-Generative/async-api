@@ -3,6 +3,7 @@ Tests d'intégration pour mic_worker
 Ces tests nécessitent RabbitMQ en fonctionnement
 """
 
+import asyncio
 import contextlib
 import json
 import os
@@ -11,7 +12,7 @@ from typing import Any
 import pytest
 
 from mic_worker.typed import HealthCheckConfig, IncomingMessage, Infinite, OnShot, SyncTaskInterface
-from mic_worker.worker import AsyncWorkerRunner
+from mic_worker.worker import AsyncWorkerRunner, HealthCheckServer
 
 
 @pytest.mark.integration
@@ -24,7 +25,7 @@ async def test_full_worker_integration() -> None:
     class TaskProvider(SyncTaskInterface):
         """Provider de tâche de test."""
 
-        async def process_message(self, message: Any) -> str:
+        async def process_message(self, message: Any) -> str:  # noqa: ANN401
             data = json.loads(message.body.decode())
             result = f"Processed: {data.get('id', 'unknown')}"
             results.append(result)
@@ -47,9 +48,6 @@ async def test_full_worker_integration() -> None:
 @pytest.mark.asyncio
 async def test_health_check_integration() -> None:
     """Test d'intégration du health check."""
-    import asyncio
-
-    from mic_worker.worker import HealthCheckServer
 
     health_config = HealthCheckConfig(host="127.0.0.1", port=0)
     server = HealthCheckServer(health_config)
@@ -65,7 +63,7 @@ def test_concurrent_worker_modes() -> None:
     """Test des différents modes de worker."""
 
     class TaskProvider(SyncTaskInterface):
-        async def process_message(self, incoming_message: IncomingMessage) -> str:
+        async def process_message(self, incoming_message: IncomingMessage) -> str:  # noqa: ARG002
             return "processed"
 
     runner_oneshot = AsyncWorkerRunner(

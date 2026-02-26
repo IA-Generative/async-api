@@ -10,7 +10,8 @@ from api.schemas.service import service_info_from_service_config
 
 class ServiceService:
     def __init__(
-        self, service_repository: Annotated[ServicesConfigRepository, Depends(ServicesConfigRepository)],
+        self,
+        service_repository: Annotated[ServicesConfigRepository, Depends(ServicesConfigRepository)],
     ) -> None:
         self.service_repository: ServicesConfigRepository = service_repository
 
