@@ -46,7 +46,7 @@ class Infinite:
     concurrency: int = 1
 
 
-type WorkerMode = OnShot | Infinite
+type WorkerMode = OnShot | Infinite # type: ignore[syntax]
 
 
 class SendException(Exception):

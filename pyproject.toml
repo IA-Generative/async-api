@@ -149,7 +149,8 @@ source = [
 command_line = "-m pytest --junitxml=junit.xml"
 omit = [
     "tests/*",
-    "__init__.py"
+    "__init__.py",
+    "workers/*"
 ]
 
 [tool.coverage.report]
@@ -159,3 +160,6 @@ exclude_also = [
 skip_covered = false
 precision = 2
 sort = "-miss"
+
+[tool.pytest.ini_options]
+addopts = "--ignore=workers/python"

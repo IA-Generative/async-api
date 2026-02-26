@@ -72,7 +72,7 @@ class HttpNotifier(BaseNotifier):
                 e,
             ) from e
 
-    def ssl_context(self, skip_tls: bool) -> ssl.SSLContext:
+    def ssl_context(self, skip_tls: bool) -> ssl.SSLContext: # noqa: FBT001
         ssl_context = ssl.create_default_context()
         if skip_tls:
             ssl_context.check_hostname = False
