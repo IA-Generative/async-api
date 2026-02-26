@@ -19,3 +19,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+  release-python:
+    uses: ./.github/workflows/build-and-push-package.yml
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write

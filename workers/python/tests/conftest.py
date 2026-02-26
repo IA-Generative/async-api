@@ -65,7 +65,7 @@ def sample_message_data() -> dict[str, Any]:
 def mock_task_success() -> Callable[[Any], Awaitable[str]]:
     """Mock d'une tâche qui réussit."""
 
-    async def task(message: Any) -> str:
+    async def task(message: Any) -> str: # noqa: ANN401
         await asyncio.sleep(0.1)  # Simule du travail
         return f"Processed: {message.body.decode()}"
 
@@ -76,7 +76,7 @@ def mock_task_success() -> Callable[[Any], Awaitable[str]]:
 def mock_task_failure() -> Callable[[Any], Awaitable[None]]:
     """Mock d'une tâche qui échoue."""
 
-    async def task(message: Any) -> None:
+    async def task(message: Any) -> None: # noqa: ANN401, ARG001
         await asyncio.sleep(0.1)
         raise Exception("Simulated task failure")
 
@@ -87,7 +87,7 @@ def mock_task_failure() -> Callable[[Any], Awaitable[None]]:
 def mock_sync_task() -> Callable[[Any], str]:
     """Mock d'une tâche synchrone."""
 
-    def task(message: Any) -> str:
+    def task(message: Any) -> str: # noqa: ANN401, 
         return f"Sync processed: {message.body.decode()}"
 
     return task

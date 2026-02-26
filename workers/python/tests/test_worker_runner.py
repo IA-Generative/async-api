@@ -21,8 +21,8 @@ class TestAsyncWorkerRunner:
         class TaskProvider(AsyncTaskInterface):
             async def execute(
                 self,
-                incoming_message: IncomingMessage,
-                progress: Any,
+                incoming_message: IncomingMessage,  # noqa: ARG002
+                progress: Any,  # noqa: ANN401, ARG002
             ) -> str:
                 return "processed"
 
@@ -138,8 +138,8 @@ class TestAsyncWorkerRunner:
     async def test_wait_for_connection_retry(self, mock_sleep: AsyncMock, mock_connect: AsyncMock) -> None:
         """Test de retry de connexion."""
 
-        def mock_task_provider():
-            async def task(message: Any):
+        def mock_task_provider() -> None:
+            async def task(message: Any) -> str:  # noqa: ANN401, ARG001
                 return "processed"
 
             return task

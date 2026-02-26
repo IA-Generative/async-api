@@ -6,11 +6,11 @@ from api.repositories.client_config_repository import ClientAuthorization, Clien
 
 
 class ClientService:
-
     """Service for managing client configurations and authorizations."""
 
     def __init__(
-        self, client_config_repository: Annotated[ClientConfigRepository, Depends(ClientConfigRepository)],
+        self,
+        client_config_repository: Annotated[ClientConfigRepository, Depends(ClientConfigRepository)],
     ) -> None:
         self.client_config_repository: ClientConfigRepository = client_config_repository
 
