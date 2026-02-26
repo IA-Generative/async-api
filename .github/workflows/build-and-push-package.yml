@@ -1,0 +1,31 @@
+name: Python package
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-push-package:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Build package
+        working-directory: workers/python
+        run: uv build
+
+      - name: Publish package
+        working-directory: workers/python
+        run: |
+          uv publish dist/* \
+            --index-url https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }}
