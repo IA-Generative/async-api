@@ -25,13 +25,8 @@ jobs:
         working-directory: workers/python
         run: uv build
         
-      - name: Publish to GitHub Packages
-        working-directory: workers/python
-        run: |
-          uv add twine
-          uv run python -m twine upload \
-            --repository-url https://pip.pkg.github.com/${{ github.repository_owner }} \
-            dist/*
-        env:
-          TWINE_USERNAME: ${{ github.actor }}
-          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mon-artifact-python
+          path: workers/python/dist/
