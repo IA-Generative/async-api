@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/IA-Generative/async-api/compare/v0.3.0...v0.3.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ci:** Remove artifact name from build workflow ([713d0f6](https://github.com/IA-Generative/async-api/commit/713d0f6f5e70b1ee0d48b4cdb24c75cacb861d91))
+
 ## [0.3.0](https://github.com/IA-Generative/async-api/compare/v0.2.0...v0.3.0) (2026-02-27)
 
 
