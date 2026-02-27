@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/IA-Generative/async-api/compare/v0.2.0...v0.3.0) (2026-02-27)
+
+
+### Features
+
+* **worker:** add release ([e8a89b2](https://github.com/IA-Generative/async-api/commit/e8a89b27c4d80a7c5dcbf9180230c032de93c886))
+
+
+### Bug Fixes
+
+* **ci:** Change package publish to artifact upload ([34fc32f](https://github.com/IA-Generative/async-api/commit/34fc32fd2d1a07c976f8fef1148d4483c019bfb2))
+* **ci:** fix ci ([e8a89b2](https://github.com/IA-Generative/async-api/commit/e8a89b27c4d80a7c5dcbf9180230c032de93c886))
+* **ci:** release package ([e8a89b2](https://github.com/IA-Generative/async-api/commit/e8a89b27c4d80a7c5dcbf9180230c032de93c886))
+* Modify package publishing to use twine ([385c503](https://github.com/IA-Generative/async-api/commit/385c503b8002d94e604599232ec61dbe1fbea098))
+* **publish:** publish package ([e8a89b2](https://github.com/IA-Generative/async-api/commit/e8a89b27c4d80a7c5dcbf9180230c032de93c886))
+
 ## [0.2.0](https://github.com/IA-Generative/async-api/compare/v0.1.0...v0.2.0) (2025-10-18)
 
 
