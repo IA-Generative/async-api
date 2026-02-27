@@ -24,11 +24,13 @@ jobs:
       - name: Build package
         working-directory: workers/python
         run: uv build
-
-      - name: Publish package
-        working-directory: workers/python
+        
+      - name: Publish to GitHub Packages
         run: |
-          uv publish dist/* \
-            --index https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload \
-            --username ${{ github.actor }} \
-            --password ${{ secrets.GITHUB_TOKEN }}
+          uv add twine
+          uv run python -m twine upload \
+            --repository-url https://pip.pkg.github.com/${{ github.repository_owner }} \
+            dist/*
+        env:
+          TWINE_USERNAME: ${{ github.actor }}
+          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
