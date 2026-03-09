@@ -33,6 +33,19 @@ start_api() {
         --workers ${API_WORKERS:-1}
 }
 
+wait_for_database() {
+    local host port
+    host=$(echo "${DATABASE_URL}" | sed -E 's|.*@([^:/]+):([0-9]+)/.*|\1|')
+    port=$(echo "${DATABASE_URL}" | sed -E 's|.*@([^:/]+):([0-9]+)/.*|\2|')
+
+    echo "⏳ Waiting for database at $host:$port..."
+    until (echo > /dev/tcp/"$host"/"$port") 2>/dev/null; do
+        echo "   Database not ready, retrying in 2s..."
+        sleep 2
+    done
+    echo "✅ Database is ready!"
+}
+
 start_listener() {
     wait_for_database
     exec python3 listener/main.py

@@ -1,11 +1,20 @@
 FROM node:18
 
-RUN apt-get update -y
-RUN apt-get install -y npm
+RUN apt-get update -y \
+    && apt-get install -y npm
+
 RUN npm install -g nodemon
 
 WORKDIR /app
+
 COPY package.json ./
+
 RUN npm install
+
 COPY index.js ./
+
+RUN groupadd -g 1001 appuser && useradd -u 1001 -g 1001 -s /bin/bash appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 CMD ["nodemon", "--legacy-watch","--exec", "node","index.js"]

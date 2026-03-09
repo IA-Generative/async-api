@@ -7,10 +7,10 @@ services:
       - ${PWD}/api:/app/api
       - ${PWD}/config:/app/config
       - ${PWD}/migrations:/app/migrations
-      - ${PWD}/scripts/entrypoint_dev.sh:/app/scripts/entrypoint.sh
+      # - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
     - "8080:8000"
     depends_on:
@@ -20,6 +20,7 @@ services:
     - .env.example
     environment:
       - APP=api
+
   listener:
     image: github.com/titigmr/asyncapi:v0.1.0
     container_name: listener
@@ -34,10 +35,10 @@ services:
       - ${PWD}/api:/app/api
       - ${PWD}/listener:/app/listener
       - ${PWD}/config:/app/config
-      - ${PWD}/scripts/entrypoint_dev.sh:/app/scripts/entrypoint.sh
+      # - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     depends_on:
     - db
     - broker
@@ -45,6 +46,7 @@ services:
     -  .env.example
     environment:
       - APP=listener
+
   consumer:
     image: github.com/titigmr/consumer:v0.1.0
     container_name: consumer
@@ -60,6 +62,7 @@ services:
       - broker
     env_file:
       -  .env.example
+
   db:
     image: postgres:17
     volumes:
@@ -72,6 +75,7 @@ services:
       POSTGRES_DB: tasks
     ports:
       - "5433:5432"
+
   broker:
     image: rabbitmq:management
     container_name: rabbitmq
