@@ -33,7 +33,7 @@ docker-build:async-api:
     TAG: "${CI_COMMIT_TAG}"
   stage: docker-build
   extends:
-    - .kaniko:build-push
+    - .kaniko:simple-build-push
 
 docker-build:consumer:
   needs: ["read_secret"]
@@ -45,4 +45,4 @@ docker-build:consumer:
     TAG: "${CI_COMMIT_TAG}"
   stage: docker-build
   extends:
-    - .kaniko:build-push
+    - .kaniko:simple-build-push
