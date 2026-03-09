@@ -7,10 +7,10 @@ services:
       - ${PWD}/api:/app/api
       - ${PWD}/config:/app/config
       - ${PWD}/migrations:/app/migrations
-      # - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
+      - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
     - "8080:8000"
     depends_on:
@@ -35,10 +35,10 @@ services:
       - ${PWD}/api:/app/api
       - ${PWD}/listener:/app/listener
       - ${PWD}/config:/app/config
-      # - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
+      - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     depends_on:
     - db
     - broker

@@ -1,0 +1,274 @@
+# Database connection configuration with intelligent fallback strategy
+# @section -- Database
+database:
+  # -- Use existing secret for database url (highest priority - no secret creation)
+  urlFromSecret: {}
+    # -- Name of existing secret containing database url
+    # name: "my-database-secret"
+    # -- Key in the secret containing the database url
+    # key: "DATABASE_URL"
+
+
+# Message broker connection configuration with intelligent fallback strategy
+# @section -- Broker
+broker:
+  # -- Use existing secret for broker url (highest priority - no secret creation)
+  urlFromSecret: {}
+    # -- Name of existing secret containing broker url
+    # name: "my-broker-secret"
+    # -- Key in the secret containing the broker url
+    # key: "BROKER_URL"
+
+api:
+  # -- The number of application controller pods to run.
+  # @section -- Api
+  replicaCount: 1
+  image:
+    # -- Tag to use for the app.
+    # @section -- Api
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "v0.3.1"
+
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    # @section -- Api
+    enabled: true
+    # -- Defines which ingress controller will implement the resource.
+    # @section -- Api
+    className: "nginx"
+    # -- Additional ingress annotations.
+    # @section -- Api
+    annotations: {}
+    # -- Additional ingress labels.
+    # @section -- Api
+    labels: {}
+    hosts:
+      - backend:
+          # -- Name of the backend service linked to the host record (leave empty to use the app service).
+          # @section -- Api
+          serviceName: ""
+          # -- Port used by the backend service linked to the host record (leave null to use the app service port).
+          # @section -- Api
+          portNumber: null
+        # -- Name of the host record.
+        # @section -- Api
+        name: "domain.local"
+        # -- Path type of the host record.
+        # @section -- Api
+        pathType: "Prefix"
+        # -- Path of the host record to manage routing.
+        # @section -- Api
+        path: "/"
+    # -- Enable TLS configuration.
+    # @section -- Api
+    tls: []
+    # - secretName: domain.local-tls
+    #   hosts:
+    #   - domain.local
+  # -- Image credentials configuration.
+  # @section -- Api
+  imagePullSecrets: []
+  # - name: "pullsecret-name-1"
+  #   create: false
+
+  resources:
+    requests:
+      # -- Memory request for the app.
+      # @section -- Api
+      memory: "256Mi"
+      # -- CPU request for the app.
+      # @section -- Api
+      cpu: "100m"
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
+    limits:
+      # -- Memory limit for the app.
+      # @section -- Api
+      memory: "2Gi"
+      # -- CPU limit for the app.
+      # @section -- Api
+      cpu: "500m"
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
+
+# PostgreSQL CNPG configuration
+# @section -- PostgreSQL
+cnpg:
+  fullnameOverride: async-api-pg-cluster
+  # -- Enable PostgreSQL subchart
+  enabled: true
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
+  pvcSize:
+    # -- PVC size for data
+    data: 8Gi
+    # -- PVC size for WAL
+    wal: 2Gi
+  # -- PostgreSQL resources
+  resources:
+    # -- PostgreSQL resource limits
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  monitoring:
+    enabled: true
+  backup:
+    enabled: false
+
+# RabbitMQ configuration
+# @section -- RabbitMQ
+rabbitmq:
+  # -- Enable RabbitMQ subchart
+  enabled: true
+  # -- RabbitMQ authentication configuration
+  auth:
+    # -- RabbitMQ root username
+    username: "asynctask"
+    # -- RabbitMQ root password
+    password: "changeme123"
+    # -- RabbitMQ erlang cookie
+    erlangCookie: "secretcookie"
+    # -- Use existing secret for RabbitMQ passwords
+    existingPasswordSecret: ""
+    # -- Use existing secret for RabbitMQ erlang cookie
+    existingErlangSecret: ""
+  # -- RabbitMQ clustering configuration
+  clustering:
+    # -- Enable RabbitMQ clustering
+    enabled: false
+    # -- RabbitMQ cluster formation discovery
+    addressType: hostname
+    # -- RabbitMQ cluster node count
+    replicaCount: 1
+  # -- RabbitMQ persistence configuration
+  persistence:
+    # -- Enable RabbitMQ persistence using PVC
+    enabled: true
+    # -- RabbitMQ persistence storage class
+    storageClass: ""
+    # -- RabbitMQ persistence access mode
+    accessMode: ReadWriteOnce
+    # -- RabbitMQ persistence size
+    size: 8Gi
+  # -- RabbitMQ resources
+  resources:
+    # -- RabbitMQ resource limits
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    # -- RabbitMQ resource requests
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  # -- RabbitMQ service configuration
+  service:
+    # -- RabbitMQ service type
+    type: ClusterIP
+    # -- RabbitMQ service ports
+    ports:
+      # -- RabbitMQ AMQP port
+      amqp: 5672
+      # -- RabbitMQ management UI port
+      manager: 15672
+  # -- RabbitMQ management plugin configuration
+  management:
+    # -- Enable RabbitMQ management plugin
+    enabled: true
+  # -- RabbitMQ metrics configuration
+  metrics:
+    # -- Enable RabbitMQ metrics
+    enabled: false
+    # -- RabbitMQ metrics service monitor
+    serviceMonitor:
+      # -- Enable RabbitMQ metrics service monitor
+      enabled: false
+
+# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
+# Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
+vault:
+  enabled: true
+  # Référence vers la VaultAuth (à créer dans le namespace ou globalement)
+  vaultAuthRef: vault-auth
+  # Moteur KV et chemin du secret dans Vault (KV v2 attendu avec clés username, password)
+  refreshAfter: 1h
+  type: kv-v2
+  mount: asyncapi
+  pathApp: staging/psql-user
+  pathAdmin: staging/psql-admin
+  pathRabbitmq: staging/rabbitmq-credentials
+  pathDbConfig: staging/db-config
+
+# Workers configuration
+# @section -- Workers
+workers:
+  # -- Example worker demonstrating deployment with KEDA autoscaling
+  # @section -- Workers
+    # -- Worker name (used for labeling and naming resources)
+    # @section -- Workers
+  - name: consumer
+    # -- Deployment-specific configuration (only used when type=deployment)
+    # @section -- Workers
+    deploymentSpec:
+      # -- Container image configuration
+      # @section -- Workers
+      image:
+        # -- Image tag
+        # @section -- Workers
+        tag: "v0.3.1"
+        # -- Image pull policy
+        # @section -- Workers
+        pullPolicy: IfNotPresent
+
+      # -- Number of replicas (ignored if KEDA autoscaling is enabled)
+      # @section -- Workers
+      replicas: 1
+
+      # -- Image pull secrets for the worker
+      # @section -- Workers
+      imagePullSecrets: []
+      # - name: "my-registry-secret"
+
+      # -- Resource limits and requests
+      # @section -- Workers
+      resources:
+        requests:
+          # -- CPU request
+          # @section -- Workers
+          cpu: "100m"
+          # -- Memory request
+          # @section -- Workers
+          memory: "128Mi"
+        limits:
+          # -- CPU limit
+          # @section -- Workers
+          cpu: "500m"
+          # -- Memory limit
+          # @section -- Workers
+          memory: "512Mi"
+
+      # -- Environment variables as key-value pairs
+      # @section -- Workers
+      env:
+        - name: IN_QUEUE_NAME
+          value: "example_queue_in"
+        - name: OUT_QUEUE_NAME
+          value: "example_queue_out"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: CONSUMER_ENABLE_HEALTH_CHECK_SERVER
+          value: "true"
+        - name: CONSUMER_HEALTH_CHECK_PORT
+          value: "8080"
+        - name: CONSUMER_HEALTH_CHECK_HOST
+          value: "0.0.0.0"
+
+    # -- KEDA autoscaler configuration
+    # @section -- Workers
+    kedaAutoscaler:
+      # -- Enable KEDA autoscaling
+      # @section -- Workers
+      enabled: true
+
+
