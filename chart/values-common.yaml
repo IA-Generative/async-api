@@ -892,6 +892,16 @@ rabbitmq:
     requests:
       cpu: 250m
       memory: 256Mi
+  # -- RabbitMQ init container resources
+  initContainer:
+    # -- RabbitMQ init container resources
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
   # -- RabbitMQ service configuration
   metrics:
     # -- Enable RabbitMQ metrics
