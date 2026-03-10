@@ -171,7 +171,7 @@ vault:
   mount: asyncapi
   pathApp: staging/psql-user
   pathAdmin: staging/psql-admin
-  pathRabbitmq: staging/rabbitmq-credentials
+  pathRabbitmq: staging/rabbitmq
   pathDbConfig: staging/db-config
 
 # Workers configuration
