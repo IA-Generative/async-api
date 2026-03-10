@@ -82,7 +82,7 @@ spec:
         {{- if .Values.database.urlFromSecret.name }}
         - secretRef:
             name: {{ .Values.database.urlFromSecret.name }}
-        {{- else if or .Values.database.url .Values.database.components.host .Values.postgresql.enabled }}
+        {{- else if or .Values.database.url .Values.database.components.host .Values.cnpg.enabled }}
         - secretRef:
             name: {{ printf "%s-database" (include "helper.fullname" .) }}
         {{- end }}
@@ -93,7 +93,7 @@ spec:
         - secretRef:
             name: {{ printf "%s-broker" (include "helper.fullname" .) }}
         {{- end }}
-        {{- if and .Values.postgresql.enabled (not .Values.postgresql.auth.password) (not .Values.database.urlFromSecret.name) }}
+        {{- if and .Values.cnpg.enabled (not .Values.cnpg.credentials.password) (not .Values.database.urlFromSecret.name) }}
         - secretRef:
             name: {{ include "chart.postgresql.fullname" . }}
         {{- end }}
@@ -177,7 +177,7 @@ spec:
         {{- if .Values.database.urlFromSecret.name }}
         - secretRef:
             name: {{ .Values.database.urlFromSecret.name }}
-        {{- else if or .Values.database.url .Values.database.components.host .Values.postgresql.enabled }}
+        {{- else if or .Values.database.url .Values.database.components.host .Values.cnpg.enabled }}
         - secretRef:
             name: {{ printf "%s-database" (include "helper.fullname" .) }}
         {{- end }}
@@ -188,7 +188,7 @@ spec:
         - secretRef:
             name: {{ printf "%s-broker" (include "helper.fullname" .) }}
         {{- end }}
-        {{- if and .Values.postgresql.enabled (not .Values.postgresql.auth.password) (not .Values.database.urlFromSecret.name) }}
+        {{- if and .Values.cnpg.enabled (not .Values.cnpg.credentials.password) (not .Values.database.urlFromSecret.name) }}
         - secretRef:
             name: {{ include "chart.postgresql.fullname" . }}
         {{- end }}

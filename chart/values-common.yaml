@@ -864,13 +864,6 @@ cnpg:
 rabbitmq:
   # -- Enable RabbitMQ subchart
   enabled: true
-  # -- RabbitMQ authentication configuration
-  resources:
-    limits:
-      memory: 2Gi
-    requests:
-      cpu: 100m
-      memory: 1Gi
   ## @section RabbitMQ Authentication
   auth:
     ## @param auth.enabled Enable RabbitMQ authentication

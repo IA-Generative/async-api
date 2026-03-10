@@ -125,10 +125,10 @@ Parameters:
 PostgreSQL service name construction
 */}}
 {{- define "chart.postgresql.fullname" -}}
-{{- if .Values.postgresql.fullnameOverride -}}
-{{- .Values.postgresql.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- if .Values.cnpg.fullnameOverride -}}
+{{- .Values.cnpg.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := .Values.postgresql.nameOverride | default "postgresql" -}}
+{{- $name := .Values.cnpg.nameOverride | default "postgresql" -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}

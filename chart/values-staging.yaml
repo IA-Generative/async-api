@@ -2,22 +2,22 @@
 # @section -- Database
 database:
   # -- Use existing secret for database url (highest priority - no secret creation)
-  urlFromSecret: {}
+  urlFromSecret:
     # -- Name of existing secret containing database url
-    # name: "my-database-secret"
+    name: "api-db-config"
     # -- Key in the secret containing the database url
-    # key: "DATABASE_URL"
+    key: "DATABASE_URL"
 
 
 # Message broker connection configuration with intelligent fallback strategy
 # @section -- Broker
 broker:
   # -- Use existing secret for broker url (highest priority - no secret creation)
-  urlFromSecret: {}
+  urlFromSecret:
     # -- Name of existing secret containing broker url
-    # name: "my-broker-secret"
+    name: "api-db-config"
     # -- Key in the secret containing the broker url
-    # key: "BROKER_URL"
+    key: "BROKER_URL"
 
 api:
   # -- The number of application controller pods to run.
@@ -32,7 +32,7 @@ api:
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
-    enabled: true
+    enabled: false
     # -- Defines which ingress controller will implement the resource.
     # @section -- Api
     className: "nginx"
@@ -67,9 +67,9 @@ api:
     #   - domain.local
   # -- Image credentials configuration.
   # @section -- Api
-  imagePullSecrets: []
-  # - name: "pullsecret-name-1"
-  #   create: false
+  imagePullSecrets:
+  - name: "registry-pull-secret"
+    create: false
 
   resources:
     requests:
@@ -122,61 +122,35 @@ cnpg:
 rabbitmq:
   # -- Enable RabbitMQ subchart
   enabled: true
-  # -- RabbitMQ authentication configuration
+  ## @section RabbitMQ Authentication
   auth:
-    # -- RabbitMQ root username
-    username: "asynctask"
-    # -- RabbitMQ root password
-    password: "changeme123"
-    # -- RabbitMQ erlang cookie
-    erlangCookie: "secretcookie"
-    # -- Use existing secret for RabbitMQ passwords
-    existingPasswordSecret: ""
-    # -- Use existing secret for RabbitMQ erlang cookie
-    existingErlangSecret: ""
-  # -- RabbitMQ clustering configuration
-  clustering:
-    # -- Enable RabbitMQ clustering
-    enabled: false
-    # -- RabbitMQ cluster formation discovery
-    addressType: hostname
-    # -- RabbitMQ cluster node count
-    replicaCount: 1
+    ## @param auth.enabled Enable RabbitMQ authentication
+    enabled: true
+    ## @param auth.username RabbitMQ default username
+    username: asynctask
+    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
+    existingSecret: "rabbitmq-credentials"
+    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
+    existingPasswordKey: "password"
+    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
+    existingErlangCookieKey: "erlang-cookie"
   # -- RabbitMQ persistence configuration
   persistence:
     # -- Enable RabbitMQ persistence using PVC
     enabled: true
-    # -- RabbitMQ persistence storage class
-    storageClass: ""
-    # -- RabbitMQ persistence access mode
-    accessMode: ReadWriteOnce
     # -- RabbitMQ persistence size
     size: 8Gi
   # -- RabbitMQ resources
   resources:
     # -- RabbitMQ resource limits
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1
+      memory: 2Gi
     # -- RabbitMQ resource requests
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 100m
+      memory: 1Gi
   # -- RabbitMQ service configuration
-  service:
-    # -- RabbitMQ service type
-    type: ClusterIP
-    # -- RabbitMQ service ports
-    ports:
-      # -- RabbitMQ AMQP port
-      amqp: 5672
-      # -- RabbitMQ management UI port
-      manager: 15672
-  # -- RabbitMQ management plugin configuration
-  management:
-    # -- Enable RabbitMQ management plugin
-    enabled: true
-  # -- RabbitMQ metrics configuration
   metrics:
     # -- Enable RabbitMQ metrics
     enabled: false
@@ -227,8 +201,8 @@ workers:
 
       # -- Image pull secrets for the worker
       # @section -- Workers
-      imagePullSecrets: []
-      # - name: "my-registry-secret"
+      imagePullSecrets:
+        - name: "registry-pull-secret"
 
       # -- Resource limits and requests
       # @section -- Workers
@@ -270,5 +244,3 @@ workers:
       # -- Enable KEDA autoscaling
       # @section -- Workers
       enabled: true
-
-
