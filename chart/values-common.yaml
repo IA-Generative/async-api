@@ -934,13 +934,13 @@ workers:
   # @section -- Workers
     # -- Worker name (used for labeling and naming resources)
     # @section -- Workers
-  - name: consumer
+  - name: exemple
     # -- Worker type: 'deployment' for long-running processes, 'job' for one-time tasks
     # @section -- Workers
     type: deployment
     # -- Enable/disable this worker
     # @section -- Workers
-    enabled: true
+    enabled: false
 
     # -- Job-specific configuration (only used when type=job)
     # @section -- Workers
