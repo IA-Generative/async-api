@@ -1,3 +1,7 @@
+# -- String to fully override the default application name.
+# @section -- General
+fullnameOverride: "async-api-staging"
+
 # Database connection configuration with intelligent fallback strategy
 # @section -- Database
 database:
