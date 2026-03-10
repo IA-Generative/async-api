@@ -181,6 +181,9 @@ workers:
     # -- Worker name (used for labeling and naming resources)
     # @section -- Workers
   - name: consumer
+    # -- Enable/disable this worker
+    # @section -- Workers
+    enabled: true
     # -- Deployment-specific configuration (only used when type=deployment)
     # @section -- Workers
     deploymentSpec:

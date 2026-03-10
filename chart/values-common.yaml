@@ -932,9 +932,9 @@ vault:
 workers:
   # -- Example worker demonstrating deployment with KEDA autoscaling
   # @section -- Workers
-  - # -- Worker name (used for labeling and naming resources)
+    # -- Worker name (used for labeling and naming resources)
     # @section -- Workers
-    name: example
+  - name: consumer
     # -- Worker type: 'deployment' for long-running processes, 'job' for one-time tasks
     # @section -- Workers
     type: deployment
