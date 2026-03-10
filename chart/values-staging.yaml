@@ -94,7 +94,6 @@ api:
 # PostgreSQL CNPG configuration
 # @section -- PostgreSQL
 cnpg:
-  fullnameOverride: async-api-pg-cluster
   # -- Enable PostgreSQL subchart
   enabled: true
   imageName: ghcr.io/cloudnative-pg/postgresql:17.7

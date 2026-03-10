@@ -818,9 +818,9 @@ extraObjects: []
 # PostgreSQL CNPG configuration
 # @section -- PostgreSQL
 cnpg:
-  fullnameOverride: async-api-pg-cluster
   # -- Enable PostgreSQL subchart
   enabled: true
+  fullnameOverride: async-api-pg-cluster
   imageName: ghcr.io/cloudnative-pg/postgresql:17.7
   dbName: asynctask
   credentials:
@@ -864,6 +864,7 @@ cnpg:
 rabbitmq:
   # -- Enable RabbitMQ subchart
   enabled: true
+  fullnameOverride: async-api-rabbitmq
   ## @section RabbitMQ Authentication
   auth:
     ## @param auth.enabled Enable RabbitMQ authentication
