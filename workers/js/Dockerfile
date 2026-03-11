@@ -1,7 +1,4 @@
-FROM node:18
-
-RUN apt-get update -y \
-    && apt-get install -y npm
+FROM node:24-alpine
 
 RUN npm install -g nodemon
 
@@ -13,8 +10,6 @@ RUN npm install
 
 COPY index.js ./
 
-RUN groupadd -g 1001 appuser && useradd -u 1001 -g 1001 -s /bin/bash appuser \
-    && chown -R appuser:appuser /app
-USER appuser
+USER node
 
 CMD ["nodemon", "--legacy-watch","--exec", "node","index.js"]
