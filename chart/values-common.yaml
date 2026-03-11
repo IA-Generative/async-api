@@ -5,69 +5,14 @@ nameOverride: ""
 # @section -- General
 fullnameOverride: ""
 
-# Database connection configuration with intelligent fallback strategy
-# @section -- Database
-database:
-  # -- Database connection URL (creates secret with DATABASE_URL)
-  # Example: "postgresql+asyncpg://user:pass@host:5432/dbname"
-  url: ""
-
-  # -- Use existing secret for database url (highest priority - no secret creation)
-  urlFromSecret: {}
-    # -- Name of existing secret containing database url
-    # name: "my-database-secret"
-    # -- Key in the secret containing the database url
-    # key: "DATABASE_URL"
-
-  # -- Database components (creates secret with DB_HOST, DB_PORT, etc.)
-  # @section -- Database
-  components:
-    # -- Database host
-    host: ""
-    # -- Database port
-    port: 5432
-    # -- Database name
-    name: ""
-    # -- Database username
-    username: ""
-    # -- Database password
-    password: ""
-    # -- Database scheme for URL construction
-    scheme: "postgresql+asyncpg"
-
-# Message broker connection configuration with intelligent fallback strategy
-# @section -- Broker
-broker:
-  # -- Broker connection URL (creates secret with BROKER_URL)
-  # Example: "amqp://user:pass@host:5672/vhost"
-  url: ""
-
-  # -- Use existing secret for broker url (highest priority - no secret creation)
-  urlFromSecret: {}
-    # -- Name of existing secret containing broker url
-    # name: "my-broker-secret"
-    # -- Key in the secret containing the broker url
-    # key: "BROKER_URL"
-
-  # -- Broker components (creates secret with BROKER_HOST, BROKER_PORT, etc.)
-  # @section -- Broker
-  components:
-    # -- Broker host
-    host: ""
-    # -- Broker port
-    port: 5672
-    # -- Broker username
-    username: ""
-    # -- Broker password
-    password: ""
-    # -- Virtual host for broker URL construction
-    vhost: "/"
-    # -- Broker scheme for URL construction
-    scheme: "amqp"
-
 # Configuration files management
 # @section -- Config
 config:
+  # -- Name of existing secret containing database and broker url
+  # @section -- Config
+  urlExistingSecret: "async-api-db-config"
+  # -- This secret must contain both DATABASE_URL and BROKER_URL keys
+
   # -- Services configuration file content or existing secret reference
   # @section -- Config
   services:
@@ -82,8 +27,8 @@ config:
       - name: example2
         # json_schema: ./schemas/example.json # Default: No schema
         # quotas: 1000                        # Default: No quotas
-        # in_queue: example_queue_in          # Default: <svc>_queue_in
-        # out_queue: example_queue_out        # Default: <svc>_queue_out
+        in_queue: example_queue_in          # Default: <svc>_queue_in
+        out_queue: example_queue_out        # Default: <svc>_queue_out
 
     # -- Use existing secret for services configuration (optional)
     fromSecret: {}
@@ -158,7 +103,7 @@ api:
   image:
     # -- Repository to use for the app.
     # @section -- Api
-    repository: "github.com/titigmr/asyncapi"
+    repository: "harbor.sdid.cpin.numerique-interieur.com/asyncapi/async-api"
     # -- Image pull policy for the app.
     # @section -- Api
     pullPolicy: "IfNotPresent"
@@ -290,8 +235,12 @@ api:
   podLabels: {}
   # -- Toggle and define pod-level security context.
   # @section -- Api
-  podSecurityContext: {}
-  # fsGroup: 2000
+  podSecurityContext:
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+
   # -- Init containers to add to the app pod.
   # @section -- Api
   initContainers: []
@@ -329,13 +278,14 @@ api:
   args: []
   # -- Toggle and define container-level security context.
   # @section -- Api
-  securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+
   # -- Api container env variables loaded from configmap or secret reference.
   # @section -- Api
   envFrom: []
@@ -810,99 +760,72 @@ extraObjects: []
 #       database: "keycloak"
 #       architecture: "standalone"
 
-# PostgreSQL configuration
+# PostgreSQL CNPG configuration
 # @section -- PostgreSQL
-postgresql:
+cnpg:
   # -- Enable PostgreSQL subchart
   enabled: true
-  # -- PostgreSQL architecture
-  architecture: standalone
-  # -- PostgreSQL authentication configuration
-  auth:
-    # -- PostgreSQL root user
-    postgresUser: postgres
-    # -- PostgreSQL root password (use existing secret or auto-generate)
-    postgresPassword: "postgres"
-    # -- PostgreSQL database name
-    database: "asynctask"
+  fullnameOverride: async-api-pg-cluster
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
+  dbName: asynctask
+  credentials:
     # -- PostgreSQL username for application
-    username: "asynctask"
-    # -- PostgreSQL password for application user
-    password: "changeme123"
+    username: asynctask
     # -- Use existing secret for PostgreSQL passwords
-    existingSecret: ""
-  # -- PostgreSQL primary configuration
-  primary:
-    # -- PostgreSQL primary persistence configuration
-    persistence:
-      # -- Enable PostgreSQL primary persistence using PVC
+    existingSecrets:
       enabled: true
-      # -- PostgreSQL primary persistence storage class
-      storageClass: ""
-      # -- PostgreSQL primary persistence access modes
-      accessModes:
-        - ReadWriteOnce
-      # -- PostgreSQL primary persistence size
-      size: 8Gi
-    # -- PostgreSQL primary resources
-    resources:
-      # -- PostgreSQL primary resource limits
-      limits:
-        cpu: 500m
-        memory: 512Mi
-      # -- PostgreSQL primary resource requests
-      requests:
-        cpu: 250m
-        memory: 256Mi
-    # -- PostgreSQL primary service configuration
-    service:
-      # -- PostgreSQL primary service type
-      type: ClusterIP
-      # -- PostgreSQL primary service port
-      ports:
-        postgresql: 5432
-  # -- PostgreSQL metrics configuration
-  metrics:
-    # -- Enable PostgreSQL metrics
+      app:
+        secretName: async-api-db-appuser
+      postgres:
+        secretName: async-api-db-superuser
+  # -- PostgreSQL architecture
+  mode: primary
+  # -- PostgreSQL instances
+  instances: 1
+  # -- Enable superuser access
+  enableSuperuserAccess: true
+  # -- PVC size
+  pvcSize:
+    # -- PVC size for data
+    data: 8Gi
+    # -- PVC size for WAL
+    wal: 2Gi
+  # -- PostgreSQL resources
+  resources:
+    # -- PostgreSQL resource limits
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  monitoring:
+    enabled: true
+  backup:
     enabled: false
-    # -- PostgreSQL metrics service monitor
-    serviceMonitor:
-      # -- Enable PostgreSQL metrics service monitor
-      enabled: false
 
 # RabbitMQ configuration
 # @section -- RabbitMQ
 rabbitmq:
   # -- Enable RabbitMQ subchart
   enabled: true
-  # -- RabbitMQ authentication configuration
+  fullnameOverride: async-api-rabbitmq
+  ## @section RabbitMQ Authentication
   auth:
-    # -- RabbitMQ root username
-    username: "asynctask"
-    # -- RabbitMQ root password
-    password: "changeme123"
-    # -- RabbitMQ erlang cookie
-    erlangCookie: "secretcookie"
-    # -- Use existing secret for RabbitMQ passwords
-    existingPasswordSecret: ""
-    # -- Use existing secret for RabbitMQ erlang cookie
-    existingErlangSecret: ""
-  # -- RabbitMQ clustering configuration
-  clustering:
-    # -- Enable RabbitMQ clustering
-    enabled: false
-    # -- RabbitMQ cluster formation discovery
-    addressType: hostname
-    # -- RabbitMQ cluster node count
-    replicaCount: 1
+    ## @param auth.enabled Enable RabbitMQ authentication
+    enabled: true
+    ## @param auth.username RabbitMQ default username
+    username: asynctask
+    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
+    existingSecret: "async-api-rabbitmq-credentials"
+    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
+    existingPasswordKey: "password"
+    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
+    existingErlangCookieKey: "erlang-cookie"
   # -- RabbitMQ persistence configuration
   persistence:
     # -- Enable RabbitMQ persistence using PVC
     enabled: true
-    # -- RabbitMQ persistence storage class
-    storageClass: ""
-    # -- RabbitMQ persistence access mode
-    accessMode: ReadWriteOnce
     # -- RabbitMQ persistence size
     size: 8Gi
   # -- RabbitMQ resources
@@ -915,21 +838,17 @@ rabbitmq:
     requests:
       cpu: 250m
       memory: 256Mi
+  # -- RabbitMQ init container resources
+  initContainer:
+    # -- RabbitMQ init container resources
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
   # -- RabbitMQ service configuration
-  service:
-    # -- RabbitMQ service type
-    type: ClusterIP
-    # -- RabbitMQ service ports
-    ports:
-      # -- RabbitMQ AMQP port
-      amqp: 5672
-      # -- RabbitMQ management UI port
-      manager: 15672
-  # -- RabbitMQ management plugin configuration
-  management:
-    # -- Enable RabbitMQ management plugin
-    enabled: true
-  # -- RabbitMQ metrics configuration
   metrics:
     # -- Enable RabbitMQ metrics
     enabled: false
@@ -938,20 +857,32 @@ rabbitmq:
       # -- Enable RabbitMQ metrics service monitor
       enabled: false
 
+# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
+# Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
+vaultSecrets:
+  enabled: false
+  items: []
+    # - destination:
+    #     name: secretName
+    #     type: kubernetes.io/basic-auth
+    #   mount: kv2 mount name
+    #   vaultPath: pathInKv2
+    #   type: kv-v2
+
 # Workers configuration
 # @section -- Workers
 workers:
   # -- Example worker demonstrating deployment with KEDA autoscaling
   # @section -- Workers
-  - # -- Worker name (used for labeling and naming resources)
+    # -- Worker name (used for labeling and naming resources)
     # @section -- Workers
-    name: example
+  - name: exemple
     # -- Worker type: 'deployment' for long-running processes, 'job' for one-time tasks
     # @section -- Workers
     type: deployment
     # -- Enable/disable this worker
     # @section -- Workers
-    enabled: true
+    enabled: false
 
     # -- Job-specific configuration (only used when type=job)
     # @section -- Workers
@@ -965,7 +896,7 @@ workers:
       image:
         # -- Image repository
         # @section -- Workers
-        repository: "github.com/titigmr/consumer"
+        repository: "harbor.sdid.cpin.numerique-interieur.com/asyncapi/async-api-consumer"
         # -- Image tag
         # @section -- Workers
         tag: "v0.1.0"
@@ -1094,16 +1025,20 @@ workers:
       # -- Container security context
       # @section -- Workers
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        privileged: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
 
       # -- Pod security context
       # @section -- Workers
       podSecurityContext:
-        fsGroup: 1000
-      # fsGroup: 1000
-      # runAsUser: 1000
-      # runAsGroup: 1000
+        fsGroup: 1001
+        runAsUser: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
 
       # -- Pod annotations
       # @section -- Workers
@@ -1392,16 +1327,20 @@ workers:
       # -- Container security context
       # @section -- Workers
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        privileged: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
 
       # -- Pod security context
       # @section -- Workers
       podSecurityContext:
-        fsGroup: 1000
-      # fsGroup: 1000
-      # runAsUser: 1000
-      # runAsGroup: 1000
+        fsGroup: 1001
+        runAsUser: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
 
       # -- Pod annotations
       # @section -- Workers

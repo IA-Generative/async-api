@@ -79,27 +79,9 @@ spec:
         {{- if .Values.api.envFrom }}
           {{- toYaml .Values.api.envFrom | nindent 8 }}
         {{- end }}
-        {{- if .Values.database.urlFromSecret.name }}
+        {{- if .Values.config.urlExistingSecret }}
         - secretRef:
-            name: {{ .Values.database.urlFromSecret.name }}
-        {{- else if or .Values.database.url .Values.database.components.host .Values.postgresql.enabled }}
-        - secretRef:
-            name: {{ printf "%s-database" (include "helper.fullname" .) }}
-        {{- end }}
-        {{- if .Values.broker.urlFromSecret.name }}
-        - secretRef:
-            name: {{ .Values.broker.urlFromSecret.name }}
-        {{- else if or .Values.broker.url .Values.broker.components.host .Values.rabbitmq.enabled }}
-        - secretRef:
-            name: {{ printf "%s-broker" (include "helper.fullname" .) }}
-        {{- end }}
-        {{- if and .Values.postgresql.enabled (not .Values.postgresql.auth.password) (not .Values.database.urlFromSecret.name) }}
-        - secretRef:
-            name: {{ include "chart.postgresql.fullname" . }}
-        {{- end }}
-        {{- if and .Values.rabbitmq.enabled (not .Values.rabbitmq.auth.password) (not .Values.broker.urlFromSecret.name) }}
-        - secretRef:
-            name: {{ include "chart.rabbitmq.fullname" . }}
+            name: {{ .Values.config.urlExistingSecret }}
         {{- end }}
         env:
         {{- if or .Values.config.services.content .Values.config.services.fromSecret.name }}
@@ -174,27 +156,9 @@ spec:
         {{- if .Values.api.listener.envFrom }}
           {{- toYaml .Values.api.listener.envFrom | nindent 8 }}
         {{- end }}
-        {{- if .Values.database.urlFromSecret.name }}
+        {{- if .Values.config.urlExistingSecret }}
         - secretRef:
-            name: {{ .Values.database.urlFromSecret.name }}
-        {{- else if or .Values.database.url .Values.database.components.host .Values.postgresql.enabled }}
-        - secretRef:
-            name: {{ printf "%s-database" (include "helper.fullname" .) }}
-        {{- end }}
-        {{- if .Values.broker.urlFromSecret.name }}
-        - secretRef:
-            name: {{ .Values.broker.urlFromSecret.name }}
-        {{- else if or .Values.broker.url .Values.broker.components.host .Values.rabbitmq.enabled }}
-        - secretRef:
-            name: {{ printf "%s-broker" (include "helper.fullname" .) }}
-        {{- end }}
-        {{- if and .Values.postgresql.enabled (not .Values.postgresql.auth.password) (not .Values.database.urlFromSecret.name) }}
-        - secretRef:
-            name: {{ include "chart.postgresql.fullname" . }}
-        {{- end }}
-        {{- if and .Values.rabbitmq.enabled (not .Values.rabbitmq.auth.password) (not .Values.broker.urlFromSecret.name) }}
-        - secretRef:
-            name: {{ include "chart.rabbitmq.fullname" . }}
+            name: {{ .Values.config.urlExistingSecret }}
         {{- end }}
         env:
         - name: APP

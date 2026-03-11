@@ -58,12 +58,9 @@ spec:
         image: "{{ .jobSpec.image.repository }}:{{ .jobSpec.image.tag }}"
         imagePullPolicy: {{ .jobSpec.image.pullPolicy }}
         envFrom:
-        {{- if not $.Values.broker.urlFromSecret.name }}
+        {{- if $.Values.config.urlExistingSecret }}
         - secretRef:
-            name: {{ printf "%s-broker-worker" (include "helper.fullname" $) }}
-        {{- else }}
-        - secretRef:
-            name: {{ $.Values.broker.urlFromSecret.name }}
+            name: {{ $.Values.config.urlExistingSecret }}
         {{- end }}
         {{- range .jobSpec.envFromSecret }}
         - secretRef:
