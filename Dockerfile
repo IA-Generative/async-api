@@ -2,6 +2,9 @@ FROM python:3.14-slim AS base
 
 WORKDIR /app
 
+RUN groupadd -g 1001 appuser && useradd -u 1001 -g 1001 -m -s /bin/bash appuser \
+    && chown -R appuser:appuser /app
+
 COPY --from=ghcr.io/astral-sh/uv:latest uv /usr/local/bin/uv
 
 # Install dependencies
@@ -17,8 +20,6 @@ COPY --chown=appuser:appuser alembic.ini .
 ENV PATH=/app/.venv/bin/:$PATH
 ENV PYTHONPATH=/app
 
-RUN groupadd -g 1001 appuser && useradd -u 1001 -g 1001 -m -s /bin/bash appuser \
-    && chown -R appuser:appuser /app
 
 CMD ["./entrypoint.sh"]
 
