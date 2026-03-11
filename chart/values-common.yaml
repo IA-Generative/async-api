@@ -10,7 +10,7 @@ fullnameOverride: ""
 config:
   # -- Name of existing secret containing database and broker url
   # @section -- Config
-  urlExistingSecret: "api-db-config"
+  urlExistingSecret: "async-api-db-config"
   # -- This secret must contain both DATABASE_URL and BROKER_URL keys
 
   # -- Services configuration file content or existing secret reference
