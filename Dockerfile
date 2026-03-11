@@ -20,7 +20,6 @@ COPY --chown=appuser:appuser alembic.ini .
 ENV PATH=/app/.venv/bin/:$PATH
 ENV PYTHONPATH=/app
 
-
 CMD ["./entrypoint.sh"]
 
 FROM base AS dev
