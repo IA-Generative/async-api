@@ -416,7 +416,7 @@ vaultSecrets:
         name: async-api-rabbitmq-credentials
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: staging/rabbitmq-credentials
+      vaultPath: staging/rabbitmq
       type: kv-v2
     - destination:
         name: async-api-db-config
