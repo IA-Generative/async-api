@@ -5,69 +5,14 @@ nameOverride: ""
 # @section -- General
 fullnameOverride: ""
 
-# Database connection configuration with intelligent fallback strategy
-# @section -- Database
-database:
-  # -- Database connection URL (creates secret with DATABASE_URL)
-  # Example: "postgresql+asyncpg://user:pass@host:5432/dbname"
-  url: ""
-
-  # -- Use existing secret for database url (highest priority - no secret creation)
-  urlFromSecret: {}
-    # -- Name of existing secret containing database url
-    # name: "my-database-secret"
-    # -- Key in the secret containing the database url
-    # key: "DATABASE_URL"
-
-  # -- Database components (creates secret with DB_HOST, DB_PORT, etc.)
-  # @section -- Database
-  components:
-    # -- Database host
-    host: ""
-    # -- Database port
-    port: 5432
-    # -- Database name
-    name: ""
-    # -- Database username
-    username: ""
-    # -- Database password
-    password: ""
-    # -- Database scheme for URL construction
-    scheme: "postgresql+asyncpg"
-
-# Message broker connection configuration with intelligent fallback strategy
-# @section -- Broker
-broker:
-  # -- Broker connection URL (creates secret with BROKER_URL)
-  # Example: "amqp://user:pass@host:5672/vhost"
-  url: ""
-
-  # -- Use existing secret for broker url (highest priority - no secret creation)
-  urlFromSecret: {}
-    # -- Name of existing secret containing broker url
-    # name: "my-broker-secret"
-    # -- Key in the secret containing the broker url
-    # key: "BROKER_URL"
-
-  # -- Broker components (creates secret with BROKER_HOST, BROKER_PORT, etc.)
-  # @section -- Broker
-  components:
-    # -- Broker host
-    host: ""
-    # -- Broker port
-    port: 5672
-    # -- Broker username
-    username: ""
-    # -- Broker password
-    password: ""
-    # -- Virtual host for broker URL construction
-    vhost: "/"
-    # -- Broker scheme for URL construction
-    scheme: "amqp"
-
 # Configuration files management
 # @section -- Config
 config:
+  # -- Name of existing secret containing database and broker url
+  # @section -- Config
+  urlExistingSecret: "api-db-config"
+  # -- This secret must contain both DATABASE_URL and BROKER_URL keys
+
   # -- Services configuration file content or existing secret reference
   # @section -- Config
   services:
@@ -872,7 +817,7 @@ rabbitmq:
     ## @param auth.username RabbitMQ default username
     username: asynctask
     ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
-    existingSecret: "rabbitmq-credentials"
+    existingSecret: "async-api-rabbitmq-credentials"
     ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
     existingPasswordKey: "password"
     ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
@@ -914,18 +859,15 @@ rabbitmq:
 
 # Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 # Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
-vault:
-  enabled: true
-  # Référence vers la VaultAuth (à créer dans le namespace ou globalement)
-  vaultAuthRef: vault-auth
-  # Moteur KV et chemin du secret dans Vault (KV v2 attendu avec clés username, password)
-  refreshAfter: 1h
-  type: kv-v2
-  mount: asyncapi
-  pathApp: staging/psql-user
-  pathAdmin: staging/psql-admin
-  pathRabbitmq: staging/rabbitmq-credentials
-  pathDbConfig: staging/db-config
+vaultSecrets:
+  enabled: false
+  items: []
+    # - destination:
+    #     name: secretName
+    #     type: kubernetes.io/basic-auth
+    #   mount: kv2 mount name
+    #   vaultPath: pathInKv2
+    #   type: kv-v2
 
 # Workers configuration
 # @section -- Workers

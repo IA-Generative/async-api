@@ -24,7 +24,6 @@ spec:
       annotations:
         {{- include "helper.checksum" (list $ "/workers/configmap.yaml") | nindent 8 }}
         {{- include "helper.checksum" (list $ "/workers/secret.yaml") | nindent 8 }}
-        {{- include "helper.checksum" (list $ "/workers/broker-secret-worker.yaml") | nindent 8 }}
         {{- if .extraAnnotations }}
         {{- toYaml .extraAnnotations | nindent 8 }}
         {{- end }}
@@ -49,12 +48,9 @@ spec:
         image: {{ .deploymentSpec.image.repository }}:{{ .deploymentSpec.image.tag | default "latest" }}
         imagePullPolicy: {{ .deploymentSpec.image.pullPolicy | default "IfNotPresent" }}
         envFrom:
-        {{- if not $.Values.broker.urlFromSecret.name }}
+        {{- if $.Values.config.urlExistingSecret }}
         - secretRef:
-            name: {{ printf "%s-broker-worker" (include "helper.fullname" $) }}
-        {{- else }}
-        - secretRef:
-            name: {{ $.Values.broker.urlFromSecret.name }}
+            name: {{ $.Values.config.urlExistingSecret }}
         {{- end }}
         {{- range .deploymentSpec.envFromSecret }}
         - secretRef:

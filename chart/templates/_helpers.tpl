@@ -119,38 +119,3 @@ Parameters:
 {{ include "helper.commonLabels" $root }}
 {{ include "helper.selectorLabels" (dict "root" $root "componentName" $componentName) }}
 {{- end -}}
-
-
-{{/*
-PostgreSQL service name construction
-*/}}
-{{- define "chart.postgresql.fullname" -}}
-{{- if .Values.cnpg.fullnameOverride -}}
-{{- .Values.cnpg.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := .Values.cnpg.nameOverride | default "postgresql" -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-RabbitMQ service name construction
-*/}}
-{{- define "chart.rabbitmq.fullname" -}}
-{{- if .Values.rabbitmq.fullnameOverride -}}
-{{- .Values.rabbitmq.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := .Values.rabbitmq.nameOverride | default "rabbitmq" -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
-

@@ -1,0 +1,9 @@
+dependencies:
+- name: cnpg-cluster
+  repository: https://this-is-tobi.github.io/helm-charts
+  version: 1.5.4
+- name: rabbitmq
+  repository: oci://registry-1.docker.io/cloudpirates
+  version: 0.18.0
+digest: sha256:f5c690d0c5413f1f9e849d5064515acd58395cf39d18476d3f218f24c1f0e807
+generated: "2026-03-11T10:25:36.64091172+01:00"

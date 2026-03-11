@@ -1,27 +1,6 @@
 # -- String to fully override the default application name.
 # @section -- General
-fullnameOverride: "async-api-staging"
-
-# Database connection configuration with intelligent fallback strategy
-# @section -- Database
-database:
-  # -- Use existing secret for database url (highest priority - no secret creation)
-  urlFromSecret:
-    # -- Name of existing secret containing database url
-    name: "api-db-config"
-    # -- Key in the secret containing the database url
-    key: "DATABASE_URL"
-
-
-# Message broker connection configuration with intelligent fallback strategy
-# @section -- Broker
-broker:
-  # -- Use existing secret for broker url (highest priority - no secret creation)
-  urlFromSecret:
-    # -- Name of existing secret containing broker url
-    name: "api-db-config"
-    # -- Key in the secret containing the broker url
-    key: "BROKER_URL"
+fullnameOverride: "async-api"
 
 api:
   # -- The number of application controller pods to run.
@@ -132,7 +111,7 @@ rabbitmq:
     ## @param auth.username RabbitMQ default username
     username: asynctask
     ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
-    existingSecret: "rabbitmq-credentials"
+    existingSecret: "async-api-rabbitmq-credentials"
     ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
     existingPasswordKey: "password"
     ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
@@ -417,3 +396,31 @@ workers:
         # -- Additional annotations for ServiceMonitor
         # @section -- Workers
         annotations: {}
+
+vaultSecrets:
+  enabled: true
+  items:
+    - destination:
+        name: async-api-db-appuser
+        type: kubernetes.io/basic-auth
+      mount: asyncapi
+      vaultPath: staging/psql-user
+      type: kv-v2
+    - destination:
+        name: async-api-db-superuser
+        type: kubernetes.io/basic-auth
+      mount: asyncapi
+      vaultPath: staging/psql-admin
+      type: kv-v2
+    - destination:
+        name: async-api-rabbitmq-credentials
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/rabbitmq-credentials
+      type: kv-v2
+    - destination:
+        name: async-api-db-config
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/db-config
+      type: kv-v2
