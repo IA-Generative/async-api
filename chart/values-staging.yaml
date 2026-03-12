@@ -298,7 +298,7 @@ workers:
     kedaAutoscaler:
       # -- Enable KEDA autoscaling
       # @section -- Workers
-      enabled: true
+      enabled: false
       # -- Minimum number of replicas
       # @section -- Workers
       minReplicaCount: 1
@@ -324,6 +324,15 @@ workers:
         # -- Target queue length to trigger scaling
         # @section -- Workers
         queueLength: "5"
+        # TriggerAuthentication: KEDA se connecte à RabbitMQ depuis son propre namespace,
+        # il ne peut pas résoudre le short hostname. Le secret référencé doit contenir
+        # l'URL AMQP complète avec FQDN, ex:
+        #   amqp://user:pass@async-api-rabbitmq-headless.NAMESPACE.svc.cluster.local:5672/
+        # Ajouter la clé BROKER_URL_FQDN dans le secret Vault staging/db-config.
+        triggerAuth:
+          enabled: true
+          secretName: "async-api-db-config"
+          secretKey: "BROKER_URL_FQDN"
 
       # -- Advanced scaling behavior configuration
       # @section -- Workers

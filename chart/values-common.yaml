@@ -1396,7 +1396,7 @@ workers:
     # -- KEDA configuration for job scaling
     # @section -- Workers
     kedaAutoscaler:
-      enabled: true
+      enabled: false
       minReplicaCount: 0
       maxReplicaCount: 5
       idleReplicaCount: 0
