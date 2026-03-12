@@ -392,7 +392,7 @@ cnpg:
     enabled: false
 
 pgadmin:
-  enabled: true
+  enabled: false
   ingress:
     host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
 
