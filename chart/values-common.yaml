@@ -194,7 +194,7 @@ api:
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
-    enabled: true
+    enabled: false
     # -- Defines which ingress controller will implement the resource.
     # @section -- Api
     className: ""

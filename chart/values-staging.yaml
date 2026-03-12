@@ -15,7 +15,7 @@ api:
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
-    enabled: false
+    enabled: true
     # -- Defines which ingress controller will implement the resource.
     # @section -- Api
     className: "nginx"
@@ -35,7 +35,7 @@ api:
           portNumber: null
         # -- Name of the host record.
         # @section -- Api
-        name: "domain.local"
+        name: "async-api-staging.sdid-app-hp.cpin.numerique-interieur.com"
         # -- Path type of the host record.
         # @section -- Api
         pathType: "Prefix"
@@ -288,9 +288,9 @@ workers:
       # -- Pod security context
       # @section -- Workers
       podSecurityContext:
-        fsGroup: 1001
-        runAsUser: 1001
-        runAsGroup: 1001
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
         runAsNonRoot: true
 
     # -- KEDA autoscaler configuration
