@@ -74,88 +74,6 @@ api:
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
 
-# PostgreSQL CNPG configuration
-# @section -- PostgreSQL
-cnpg:
-  # -- Enable PostgreSQL subchart
-  enabled: true
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
-  pvcSize:
-    # -- PVC size for data
-    data: 8Gi
-    # -- PVC size for WAL
-    wal: 2Gi
-  # -- PostgreSQL resources
-  resources:
-    # -- PostgreSQL resource limits
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 100m
-      memory: 256Mi
-  monitoring:
-    enabled: true
-  backup:
-    enabled: false
-
-# RabbitMQ configuration
-# @section -- RabbitMQ
-rabbitmq:
-  # -- Enable RabbitMQ subchart
-  enabled: true
-  ## @section RabbitMQ Authentication
-  auth:
-    ## @param auth.enabled Enable RabbitMQ authentication
-    enabled: true
-    ## @param auth.username RabbitMQ default username
-    username: asynctask
-    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
-    existingSecret: "async-api-rabbitmq-credentials"
-    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
-    existingPasswordKey: "password"
-    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
-    existingErlangCookieKey: "erlang-cookie"
-  # -- RabbitMQ persistence configuration
-  persistence:
-    # -- Enable RabbitMQ persistence using PVC
-    enabled: true
-    # -- RabbitMQ persistence size
-    size: 8Gi
-  # -- RabbitMQ resources
-  resources:
-    # -- RabbitMQ resource limits
-    limits:
-      cpu: 1
-      memory: 2Gi
-    # -- RabbitMQ resource requests
-    requests:
-      cpu: 100m
-      memory: 1Gi
-  # -- RabbitMQ service configuration
-  metrics:
-    # -- Enable RabbitMQ metrics
-    enabled: false
-    # -- RabbitMQ metrics service monitor
-    serviceMonitor:
-      # -- Enable RabbitMQ metrics service monitor
-      enabled: false
-
-# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
-# Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
-vault:
-  enabled: true
-  # Référence vers la VaultAuth (à créer dans le namespace ou globalement)
-  vaultAuthRef: vault-auth
-  # Moteur KV et chemin du secret dans Vault (KV v2 attendu avec clés username, password)
-  refreshAfter: 1h
-  type: kv-v2
-  mount: asyncapi
-  pathApp: staging/psql-user
-  pathAdmin: staging/psql-admin
-  pathRabbitmq: staging/rabbitmq
-  pathDbConfig: staging/db-config
-
 # Workers configuration
 # @section -- Workers
 
@@ -406,6 +324,79 @@ workers:
         # @section -- Workers
         annotations: {}
 
+# RabbitMQ configuration
+# @section -- RabbitMQ
+rabbitmq:
+  # -- Enable RabbitMQ subchart
+  enabled: true
+  ## @section RabbitMQ Authentication
+  auth:
+    ## @param auth.enabled Enable RabbitMQ authentication
+    enabled: true
+    ## @param auth.username RabbitMQ default username
+    username: asynctask
+    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
+    existingSecret: "async-api-rabbitmq-credentials"
+    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
+    existingPasswordKey: "password"
+    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
+    existingErlangCookieKey: "erlang-cookie"
+  # -- RabbitMQ persistence configuration
+  persistence:
+    # -- Enable RabbitMQ persistence using PVC
+    enabled: true
+    # -- RabbitMQ persistence size
+    size: 8Gi
+  # -- RabbitMQ resources
+  resources:
+    # -- RabbitMQ resource limits
+    limits:
+      cpu: 1
+      memory: 2Gi
+    # -- RabbitMQ resource requests
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  # -- RabbitMQ service configuration
+  metrics:
+    # -- Enable RabbitMQ metrics
+    enabled: false
+    # -- RabbitMQ metrics service monitor
+    serviceMonitor:
+      # -- Enable RabbitMQ metrics service monitor
+      enabled: false
+
+# PostgreSQL CNPG configuration
+# @section -- PostgreSQL
+cnpg:
+  # -- Enable PostgreSQL subchart
+  enabled: true
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
+  pvcSize:
+    # -- PVC size for data
+    data: 8Gi
+    # -- PVC size for WAL
+    wal: 2Gi
+  # -- PostgreSQL resources
+  resources:
+    # -- PostgreSQL resource limits
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  monitoring:
+    enabled: true
+  backup:
+    enabled: false
+
+pgadmin:
+  enabled: true
+  ingress:
+    host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
+
+# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 vaultSecrets:
   enabled: true
   items:
@@ -432,4 +423,10 @@ vaultSecrets:
         type: kubernetes.io/opaque
       mount: asyncapi
       vaultPath: staging/db-config
+      type: kv-v2
+    - destination:
+        name: async-api-pgadmin
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/pgadmin
       type: kv-v2

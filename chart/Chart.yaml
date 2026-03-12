@@ -8,15 +8,20 @@ deprecated: false
 annotations: {}
 keywords: []
 dependencies:
+  - name: rabbitmq
+    version: "0.18.0"
+    repository: "oci://registry-1.docker.io/cloudpirates"
+    condition: rabbitmq.enabled
   - name: cnpg-cluster
     alias: cnpg
     version: "1.5.4"
     repository: "https://this-is-tobi.github.io/helm-charts"
     condition: cnpg.enabled
-  - name: rabbitmq
-    version: "0.18.0"
-    repository: "oci://registry-1.docker.io/cloudpirates"
-    condition: rabbitmq.enabled
+  - name: pgadmin4
+    condition: pgadmin.enabled
+    alias: pgadmin
+    version: 1.59.0
+    repository: https://helm.runix.net/
 sources:
 - https://github.com/titigmr/async-api
 maintainers:
