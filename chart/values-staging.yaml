@@ -397,7 +397,7 @@ pgadmin:
     enabled: true
     hosts:
       - host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
-        path: 
+        paths:
           - path: /
             pathType: Prefix
 
