@@ -395,7 +395,11 @@ pgadmin:
   enabled: true
   ingress:
     enabled: true
-    host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
+    hosts:
+      - host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
+        path: 
+          - path: /
+            pathType: Prefix
 
 # Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 vaultSecrets:
