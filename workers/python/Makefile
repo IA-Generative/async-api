@@ -3,7 +3,7 @@
 # Variables
 IMAGE_NAME := python-worker
 CONTAINER_NAME := async-worker-demo
-BROKER_URL := amqp://localhost:5672
+BROKER_URL := amqp://kalo:kalo@rabbitmq:5672
 
 help: ## Affiche cette aide
 	@echo "Commandes disponibles:"
@@ -16,22 +16,23 @@ install-dev: ## Installe les dépendances de développement
 	pip install -e ".[dev]"
 
 build: ## Construit l'image Docker
-	docker build -t $(IMAGE_NAME) .
+	docker build -t $(IMAGE_NAME) demo/
 
 run: ## Lance le conteneur Docker
 	docker run --rm --name $(CONTAINER_NAME) \
 		-e BROKER_URL="$(BROKER_URL)" \
-		-e IN_QUEUE_NAME="in_queue_python" \
-		-e OUT_QUEUE_NAME="example_out_queue" \
+		-e IN_QUEUE_NAME="example_queue_in" \
+		-e OUT_QUEUE_NAME="example_queue_out" \
 		-e WORKER_CONCURRENCY="3" \
+		--network async-api_default \
 		-p 8000:8000 \
 		$(IMAGE_NAME)
 
 run-detached: ## Lance le conteneur Docker en arrière-plan
 	docker run -d --name $(CONTAINER_NAME) \
 		-e BROKER_URL="$(BROKER_URL)" \
-		-e IN_QUEUE_NAME="in_queue_python" \
-		-e OUT_QUEUE_NAME="example_out_queue" \
+		-e IN_QUEUE_NAME="example_queue_in" \
+		-e OUT_QUEUE_NAME="example_queue_out" \
 		-e WORKER_CONCURRENCY="3" \
 		-p 8000:8000 \
 		$(IMAGE_NAME)
