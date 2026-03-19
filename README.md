@@ -50,9 +50,9 @@ Cette API permet de :
    ```
 
 5. **Accéder aux interfaces**
-   - 📖 **API Documentation** : [http://localhost:8000/docs](http://localhost:8000/docs)
+   - 📖 **API Documentation** : [http://localhost:8080/docs](http://localhost:8080/docs)
    - 🐰 **RabbitMQ Management** : [http://localhost:15672](http://localhost:15672) (login: `kalo` / password: `kalo`)
-   - 🩺 **Health Check** : [http://localhost:8000/health](http://localhost:8000/health)
+   - 🩺 **Health Check** : [http://localhost:8080/internal/health](http://localhost:8080/internal/health)
 
 ### Vérification du déploiement
 
@@ -313,9 +313,9 @@ Le projet inclut des Dockerfiles optimisés pour la production avec :
 
 Une fois l'API lancée, accédez à :
 
-- **Swagger UI** : [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc** : [http://localhost:8000/redoc](http://localhost:8000/redoc)
-- **OpenAPI Schema** : [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+- **Swagger UI** : [http://localhost:8080/docs](http://localhost:8080/docs)
+- **ReDoc** : [http://localhost:8080/redoc](http://localhost:8080/redoc)
+- **OpenAPI Schema** : [http://localhost:8080/openapi.json](http://localhost:8080/openapi.json)
 
 ---
 
@@ -323,8 +323,9 @@ Une fois l'API lancée, accédez à :
 
 L'API inclut des endpoints de monitoring :
 
-- `/health` : Status de santé de l'API
-- `/metrics` : Métriques Prometheus (si activé)
+- `/internal/health` : Status de santé de l'API
+- `/internal/ready` : Vérification des dépendances (DB, broker)
+- `/internal/metrics` : Métriques Prometheus (si activé)
 
 ---
 
