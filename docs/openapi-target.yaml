@@ -1,0 +1,1403 @@
+openapi: 3.1.0
+info:
+  title: Async Task API - Socle Commun
+  description: |
+    API asynchrone de briques communes (OCR, classification, extraction, etc.)
+    pour les equipes metier (Astree, Prisme, Eloignement, DGEF, Mailbot).
+
+    ## Principe
+    Chaque service accepte une requete POST qui retourne immediatement un `task_id` (HTTP 202).
+    Le resultat est recupere via polling sur `GET /v1/tasks/{task_id}` ou via webhook.
+
+    ## Tracing
+    - `task_id` : trace technique bout-en-bout (UUID genere a la soumission, propage dans queue/worker/listener/webhook)
+    - `X-Request-Id` : contexte metier du caller (numero de dossier, nom de fichier — optionnel, propage tel quel)
+
+    ## Authentification
+    Bearer JWT (Keycloak) pour les routes metier. HTTP Basic pour les routes admin `/internal`.
+  version: 1.0.0
+  contact:
+    name: Equipe Socle
+
+servers:
+  - url: http://localhost:8080
+    description: Developpement local
+  - url: https://api.internal.example.com
+    description: Production
+
+tags:
+  - name: Vision
+    description: OCR et analyse visuelle de documents
+  - name: Intelligence
+    description: Classification et extraction d'entites (NER)
+  - name: Generation
+    description: Remplissage de templates et generation de documents
+  - name: Processing
+    description: Traitement de documents (decoupage, fusion)
+  - name: Tasks
+    description: Suivi et polling des taches asynchrones
+  - name: Storage
+    description: Stockage temporaire de fichiers (S3/MinIO)
+  - name: Services
+    description: Decouverte et catalogue des services disponibles
+  - name: Auth
+    description: Configuration d'authentification
+  - name: Clients Admin
+    description: Gestion des clients (routes internes)
+  - name: Monitoring
+    description: Metriques et reporting d'usage (routes internes)
+  - name: Health
+    description: Etat de sante de l'API (routes internes)
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ──────────────────────────────────────────────
+  # VISION
+  # ──────────────────────────────────────────────
+  /v1/vision/ocr:
+    post:
+      tags: [Vision]
+      summary: Lancer une reconnaissance de caracteres (OCR)
+      description: |
+        Extrait le texte d'un document scanne ou d'une image.
+        Le choix du moteur et le tuning sont geres en interne.
+      operationId: submitOcr
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OcrRequest'
+            examples:
+              basic:
+                summary: OCR simple
+                value:
+                  file_id: "astree/2024/facture-001.pdf"
+                  engine: "tesseract"
+              with_hint:
+                summary: OCR avec indication de type
+                value:
+                  file_id: "astree/2024/memoire.pdf"
+                  engine: "surya"
+                  hint_type: "memoire"
+                  language: "fr"
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/vision/analyze-quality:
+    post:
+      tags: [Vision]
+      summary: Analyser la qualite d'un scan
+      description: |
+        Verifie la conformite d'un document scanne : orientation, presence d'en-tete/pied de page,
+        lisibilite. Peut etre couple a l'OCR ou appele seul pour rejeter un dossier
+        avant de depenser des jetons LLM.
+      operationId: submitAnalyzeQuality
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeQualityRequest'
+            examples:
+              default:
+                value:
+                  file_id: "prisme/scans/page-001.png"
+                  checks:
+                    - orientation
+                    - header_presence
+                    - readability
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ──────────────────────────────────────────────
+  # INTELLIGENCE
+  # ──────────────────────────────────────────────
+  /v1/intelligence/classify:
+    post:
+      tags: [Intelligence]
+      summary: Classifier un document
+      description: |
+        Reconnait le type de document (passeport, memoire, facture, etc.)
+        parmi un catalogue connu.
+      operationId: submitClassify
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifyRequest'
+            examples:
+              default:
+                value:
+                  file_id: "eloignement/2024/doc-inconnu.pdf"
+                  categories:
+                    - passeport
+                    - carte_identite
+                    - memoire
+                    - facture
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/intelligence/extract:
+    post:
+      tags: [Intelligence]
+      summary: Extraire des entites (NER)
+      description: |
+        Extrait des donnees structurees (noms, dates, numeros de dossier)
+        d'un texte brut ou d'un document.
+      operationId: submitExtract
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractRequest'
+            examples:
+              default:
+                value:
+                  file_id: "astree/2024/courrier.pdf"
+                  entities:
+                    - nom
+                    - prenom
+                    - date_naissance
+                    - numero_dossier
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ──────────────────────────────────────────────
+  # GENERATION
+  # ──────────────────────────────────────────────
+  /v1/generation/render:
+    post:
+      tags: [Generation]
+      summary: Remplir un template avec des donnees
+      description: |
+        Remplit un template (.odt) avec des donnees fournies et genere un document de sortie.
+
+        Deux modes d'envoi du template :
+        - **file_id** : le client uploade prealablement son .odt via `POST /v1/storage/upload`
+          puis passe le `file_id` retourne.
+        - **template_id** : reference un modele pre-enregistre en S3 (ex: `memoire_defense`).
+
+        Le resultat (disponible via `GET /v1/tasks/{task_id}`) contient un `output_file_id`
+        et un `download_url` (pre-signed URL) pour telecharger le document genere.
+      operationId: submitRender
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderRequest'
+            examples:
+              with_template_id:
+                summary: Template pre-enregistre
+                value:
+                  template_id: "memoire_defense"
+                  data:
+                    nom: "Dupont"
+                    prenom: "Jean"
+                    date: "2024-01-15"
+                  output_format: "pdf"
+              with_file:
+                summary: Template uploade
+                value:
+                  file_id: "astree/templates/custom.odt"
+                  data:
+                    titre: "Rapport mensuel"
+                    contenu: "..."
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ──────────────────────────────────────────────
+  # PROCESSING
+  # ──────────────────────────────────────────────
+  /v1/processing/split:
+    post:
+      tags: [Processing]
+      summary: Decouper un PDF en documents distincts
+      description: |
+        Decoupe un gros PDF "fourre-tout" en plusieurs documents distincts et types.
+        Le resultat est un ensemble de fichiers stockes en S3.
+      operationId: submitSplit
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SplitRequest'
+            examples:
+              default:
+                value:
+                  file_id: "eloignement/2024/dossier-complet.pdf"
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ──────────────────────────────────────────────
+  # TASKS (polling unifie)
+  # ──────────────────────────────────────────────
+  /v1/tasks/{task_id}:
+    get:
+      tags: [Tasks]
+      summary: Consulter le statut d'une tache
+      description: |
+        Route unifiee de polling pour toutes les taches, quel que soit le service.
+        Le `task_id` est retourne dans la reponse 202 lors de la soumission.
+
+        Cycle de vie : `pending` → `in_progress` → `completed` | `failed`
+      operationId: getTaskStatus
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          description: Identifiant unique de la tache (UUID)
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/XRequestId'
+      responses:
+        '200':
+          description: Statut actuel de la tache
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatusResponse'
+              examples:
+                pending:
+                  summary: Tache en attente
+                  value:
+                    task_id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "pending"
+                    request_id: "DOSSIER-2024-1234"
+                    progress: 0
+                    task_position: 3
+                    submission_date: "2024-01-15T10:30:00Z"
+                in_progress:
+                  summary: Tache en cours
+                  value:
+                    task_id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "in_progress"
+                    request_id: "DOSSIER-2024-1234"
+                    progress: 65
+                    submission_date: "2024-01-15T10:30:00Z"
+                    start_date: "2024-01-15T10:30:05Z"
+                completed_ocr:
+                  summary: OCR terminee (resultat JSON)
+                  value:
+                    task_id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "completed"
+                    request_id: "DOSSIER-2024-1234"
+                    progress: 100
+                    submission_date: "2024-01-15T10:30:00Z"
+                    start_date: "2024-01-15T10:30:05Z"
+                    end_date: "2024-01-15T10:30:45Z"
+                    result:
+                      full_text: "Ceci est le texte extrait..."
+                      confidence: 0.98
+                      engine_used: "tesseract"
+                      blocks:
+                        - text: "Nom de famille"
+                          geometry: { x: 10, y: 20, w: 100, h: 30 }
+                          page: 1
+                      metadata:
+                        page_count: 2
+                        detected_language: "fr"
+                completed_render:
+                  summary: Render termine (resultat fichier)
+                  value:
+                    task_id: "661f9511-f30c-52e5-b827-557766551111"
+                    status: "completed"
+                    request_id: "DOSSIER-2024-5678"
+                    progress: 100
+                    submission_date: "2024-01-15T14:00:00Z"
+                    start_date: "2024-01-15T14:00:02Z"
+                    end_date: "2024-01-15T14:00:08Z"
+                    result:
+                      output_file_id: "astree/abc/rendu.pdf"
+                      download_url: "https://minio.internal/async-api-storage/astree/abc/rendu.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&..."
+                      metadata:
+                        pages: 3
+                        format: "pdf"
+                completed_split:
+                  summary: Split termine (resultat multi-fichiers)
+                  value:
+                    task_id: "772a0622-a41d-63f6-c938-668877662222"
+                    status: "completed"
+                    request_id: "DOSSIER-2024-9999"
+                    progress: 100
+                    submission_date: "2024-01-15T16:00:00Z"
+                    start_date: "2024-01-15T16:00:03Z"
+                    end_date: "2024-01-15T16:01:15Z"
+                    result:
+                      documents:
+                        - file_id: "eloignement/xyz/part-1-passeport.pdf"
+                          download_url: "https://minio.internal/...?X-Amz-..."
+                          type: "passeport"
+                          pages: [1, 2]
+                        - file_id: "eloignement/xyz/part-2-facture.pdf"
+                          download_url: "https://minio.internal/...?X-Amz-..."
+                          type: "facture"
+                          pages: [3, 4, 5]
+                      metadata:
+                        total_documents: 2
+                        total_pages: 5
+                failed:
+                  summary: Tache echouee
+                  value:
+                    task_id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "failed"
+                    request_id: "DOSSIER-2024-1234"
+                    progress: 0
+                    submission_date: "2024-01-15T10:30:00Z"
+                    start_date: "2024-01-15T10:30:05Z"
+                    end_date: "2024-01-15T10:30:06Z"
+                    error_message: "Fichier PDF corrompu"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/TaskNotFound'
+
+  # ──────────────────────────────────────────────
+  # STORAGE
+  # ──────────────────────────────────────────────
+  /v1/storage/upload:
+    post:
+      tags: [Storage]
+      summary: Uploader un fichier
+      description: |
+        Stocke temporairement un fichier dans S3/MinIO pour eviter de le renvoyer
+        a chaque etape. Le `file_id` retourne peut etre utilise dans les requetes
+        des autres services.
+
+        Les fichiers sont stockes sous `{client_id}/{uuid}/{filename}`.
+        Un pre-signed URL est retourne pour permettre le telechargement direct.
+      operationId: uploadFile
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Fichier a uploader
+      responses:
+        '201':
+          description: Fichier uploade avec succes
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+              examples:
+                default:
+                  value:
+                    file_id: "astree/a1b2c3d4/facture.pdf"
+                    presigned_url: "https://minio.internal/async-api-storage/astree/a1b2c3d4/facture.pdf?X-Amz-..."
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ──────────────────────────────────────────────
+  # SERVICES (decouverte)
+  # ──────────────────────────────────────────────
+  /v1/services:
+    get:
+      tags: [Services]
+      summary: Lister les services disponibles
+      description: |
+        Retourne le catalogue des services avec leur metadata.
+        Cette route peut alimenter une interface "Catalogue" pour les metiers
+        ou etre utilisee par n8n pour la decouverte dynamique.
+      operationId: listServices
+      security: []
+      responses:
+        '200':
+          description: Liste des services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceInfo'
+              examples:
+                default:
+                  value:
+                    - id: "ocr"
+                      name: "Reconnaissance de caracteres"
+                      description: "Extrait le texte de documents scannes ou d'images."
+                      status: "production"
+                      owner: "Equipe Vision"
+                      category: "vision"
+                      engines: ["tesseract", "surya", "easyocr"]
+                      doc_url: "https://wiki.interne/services/ocr"
+                    - id: "classify"
+                      name: "Classification de documents"
+                      description: "Reconnait le type de document parmi un catalogue connu."
+                      status: "production"
+                      owner: "Equipe IA"
+                      category: "intelligence"
+                      doc_url: "https://wiki.interne/services/classify"
+                    - id: "extract"
+                      name: "Extraction d'entites"
+                      description: "Detecte les noms, dates et numeros de dossiers dans un texte."
+                      status: "beta"
+                      owner: "Equipe IA"
+                      category: "intelligence"
+                      doc_url: "https://wiki.interne/services/ner"
+
+  /v1/services/{service_id}/schema:
+    get:
+      tags: [Services]
+      summary: Schema JSON d'un service
+      description: |
+        Retourne le JSON Schema de validation du body pour un service donne.
+        Permet a un noeud n8n personnalise de construire ses formulaires automatiquement.
+      operationId: getServiceSchema
+      security: []
+      parameters:
+        - name: service_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "ocr"
+      responses:
+        '200':
+          description: JSON Schema du service
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          $ref: '#/components/responses/ServiceNotFound'
+
+  # ──────────────────────────────────────────────
+  # AUTH
+  # ──────────────────────────────────────────────
+  /v1/auth/config:
+    get:
+      tags: [Auth]
+      summary: Configuration d'authentification
+      description: |
+        Retourne l'URL Keycloak et le realm pour l'authentification.
+        Utilise par le SDK pour decouvrir automatiquement le serveur d'auth.
+        Cette route est volontairement non authentifiee.
+      operationId: getAuthConfig
+      security: []
+      responses:
+        '200':
+          description: Configuration Keycloak
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthConfig'
+              examples:
+                default:
+                  value:
+                    keycloak_url: "https://auth.internal.example.com"
+                    realm: "async-api"
+
+  # ──────────────────────────────────────────────
+  # INTERNAL - CLIENTS ADMIN
+  # ──────────────────────────────────────────────
+  /internal/clients:
+    get:
+      tags: [Clients Admin]
+      summary: Lister tous les clients
+      operationId: listClients
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Liste des clients
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Clients Admin]
+      summary: Creer un client
+      operationId: createClient
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+            examples:
+              default:
+                value:
+                  client_id: "nouvelle-equipe"
+                  client_secret: "secret-123"
+                  is_active: true
+                  authorizations:
+                    - service: "ocr"
+                      quotas: 100
+                    - service: "classify"
+                  quotas: 50
+      responses:
+        '201':
+          description: Client cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Client deja existant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/clients/seed:
+    post:
+      tags: [Clients Admin]
+      summary: Importer les clients depuis le YAML
+      description: |
+        Charge les clients definis dans `config/clients.yaml` et les insere en base.
+        Seuls les clients absents sont crees ; les existants sont ignores.
+      operationId: seedClients
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Resultat du seed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeedResponse'
+              examples:
+                default:
+                  value:
+                    created: 3
+                    skipped: 1
+                    errors: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /internal/clients/{client_id}:
+    get:
+      tags: [Clients Admin]
+      summary: Detail d'un client
+      operationId: getClient
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detail du client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ClientNotFound'
+    put:
+      tags: [Clients Admin]
+      summary: Modifier un client
+      operationId: updateClient
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdateRequest'
+      responses:
+        '200':
+          description: Client mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ClientNotFound'
+    delete:
+      tags: [Clients Admin]
+      summary: Desactiver un client (soft delete)
+      operationId: deleteClient
+      security:
+        - basicAuth: []
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Client desactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ClientNotFound'
+
+  # ──────────────────────────────────────────────
+  # INTERNAL - MONITORING
+  # ──────────────────────────────────────────────
+  /internal/usage:
+    get:
+      tags: [Monitoring]
+      summary: Reporting d'usage par equipe
+      description: |
+        Statistiques d'utilisation des services groupees par client_id, service et statut.
+        Concu pour etre importable dans un tableur ou un outil de BI.
+      operationId: getUsage
+      security:
+        - basicAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          description: Debut de la periode (defaut 30 jours avant)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: Fin de la periode (defaut maintenant)
+          schema:
+            type: string
+            format: date-time
+        - name: client_id
+          in: query
+          description: Filtrer par equipe
+          schema:
+            type: string
+        - name: service
+          in: query
+          description: Filtrer par service
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistiques d'usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+              examples:
+                default:
+                  value:
+                    start_date: "2024-01-01T00:00:00Z"
+                    end_date: "2024-01-31T23:59:59Z"
+                    total: 1250
+                    items:
+                      - client_id: "astree"
+                        service: "ocr"
+                        status: "success"
+                        count: 450
+                      - client_id: "astree"
+                        service: "ocr"
+                        status: "failure"
+                        count: 12
+                      - client_id: "prisme"
+                        service: "classify"
+                        status: "success"
+                        count: 788
+
+  /internal/metrics:
+    get:
+      tags: [Monitoring]
+      summary: Metriques Prometheus
+      description: |
+        Expose les metriques au format Prometheus.
+        Labels disponibles : `service`, `client_id`.
+      operationId: getMetrics
+      security: []
+      responses:
+        '200':
+          description: Metriques Prometheus (text/plain)
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  # ──────────────────────────────────────────────
+  # INTERNAL - HEALTH
+  # ──────────────────────────────────────────────
+  /internal/health:
+    get:
+      tags: [Health]
+      summary: Etat de sante de l'API
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: API en fonctionnement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+              examples:
+                default:
+                  value:
+                    status: "ok"
+
+  /internal/ready:
+    get:
+      tags: [Health]
+      summary: Verification de disponibilite
+      description: Verifie que toutes les dependances (DB, broker) sont accessibles.
+      operationId: readinessCheck
+      security: []
+      responses:
+        '200':
+          description: Toutes les dependances sont accessibles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  dependencies:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                      broker:
+                        type: string
+              examples:
+                default:
+                  value:
+                    status: "ready"
+                    dependencies:
+                      database: "ok"
+                      broker: "ok"
+        '503':
+          description: Une ou plusieurs dependances sont indisponibles
+
+# ════════════════════════════════════════════════
+# COMPONENTS
+# ════════════════════════════════════════════════
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenu aupres de Keycloak
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Authentification HTTP Basic pour les routes admin
+
+  parameters:
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: |
+        Contexte metier du caller (numero de dossier, nom de fichier, etc.).
+        Optionnel, jamais genere par l'API. Propage tel quel dans toute la chaine.
+      schema:
+        type: string
+
+  headers:
+    XRequestId:
+      description: Contexte metier du caller (celui fourni en entree, ou absent)
+      schema:
+        type: string
+
+  # ──────────────────────────────────────────────
+  # REQUEST SCHEMAS
+  # ──────────────────────────────────────────────
+  schemas:
+    OcrRequest:
+      type: object
+      required: [file_id]
+      properties:
+        file_id:
+          type: string
+          description: Identifiant du fichier dans le stockage S3
+        engine:
+          type: string
+          enum: [tesseract, surya, easyocr]
+          default: tesseract
+          description: Moteur OCR a utiliser
+        language:
+          type: string
+          description: Code langue (fr, en, ar, etc.)
+        hint_type:
+          type: string
+          description: Type de document attendu (facture, memoire, passeport)
+        callback:
+          $ref: '#/components/schemas/Callback'
+
+    AnalyzeQualityRequest:
+      type: object
+      required: [file_id]
+      properties:
+        file_id:
+          type: string
+          description: Identifiant du fichier dans le stockage S3
+        checks:
+          type: array
+          items:
+            type: string
+            enum: [orientation, header_presence, footer_presence, readability, resolution]
+          description: Liste des verifications a effectuer (toutes par defaut)
+        callback:
+          $ref: '#/components/schemas/Callback'
+
+    ClassifyRequest:
+      type: object
+      required: [file_id]
+      properties:
+        file_id:
+          type: string
+          description: Identifiant du fichier dans le stockage S3
+        categories:
+          type: array
+          items:
+            type: string
+          description: Catalogue de types possibles (si vide, utilise le catalogue par defaut)
+        model:
+          type: string
+          description: Modele de classification a utiliser
+        callback:
+          $ref: '#/components/schemas/Callback'
+
+    ExtractRequest:
+      type: object
+      required: [file_id]
+      properties:
+        file_id:
+          type: string
+          description: Identifiant du fichier dans le stockage S3
+        entities:
+          type: array
+          items:
+            type: string
+          description: Liste des entites a extraire (nom, date, numero_dossier, etc.)
+        extraction_schema:
+          type: object
+          additionalProperties: true
+          description: Schema de sortie attendu (JSON Schema)
+        callback:
+          $ref: '#/components/schemas/Callback'
+
+    RenderRequest:
+      type: object
+      required: [data]
+      properties:
+        template_id:
+          type: string
+          description: Identifiant d'un template pre-enregistre en S3
+        file_id:
+          type: string
+          description: Identifiant d'un template uploade manuellement
+        data:
+          type: object
+          additionalProperties: true
+          description: Donnees a injecter dans le template
+        output_format:
+          type: string
+          enum: [pdf, odt, docx]
+          default: pdf
+          description: Format de sortie
+        callback:
+          $ref: '#/components/schemas/Callback'
+
+    SplitRequest:
+      type: object
+      required: [file_id]
+      properties:
+        file_id:
+          type: string
+          description: Identifiant du PDF a decouper
+        callback:
+          $ref: '#/components/schemas/Callback'
+
+    Callback:
+      type: object
+      description: Configuration de webhook pour notification asynchrone
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL HTTP ou AMQP DSN a appeler
+        type:
+          type: string
+          enum: [http, amqp]
+          description: Type de callback
+        queue:
+          type: string
+          description: Nom de la file pour les callbacks AMQP
+
+    # ──────────────────────────────────────────────
+    # RESPONSE SCHEMAS
+    # ──────────────────────────────────────────────
+    TaskAcceptedResponse:
+      type: object
+      required: [task_id, status, poll_url]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Identifiant unique de la tache
+        status:
+          type: string
+          enum: [pending]
+          description: Statut initial (toujours "pending")
+        poll_url:
+          type: string
+          format: uri
+          description: URL de polling (GET /v1/tasks/{task_id})
+        request_id:
+          type: string
+          description: Contexte metier (si fourni)
+        submission_date:
+          type: string
+          format: date-time
+
+    TaskStatusResponse:
+      type: object
+      required: [task_id, status]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Identifiant unique de la tache — sert de trace technique bout-en-bout
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        request_id:
+          type: string
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Pourcentage d'avancement (0-100)
+        task_position:
+          type: integer
+          description: Position dans la file d'attente (si pending)
+        result:
+          description: |
+            Resultat du traitement (si completed). Structure variable selon le service :
+            - **Services JSON** (OCR, classify, extract) : donnees structurees directement dans `result`
+            - **Services fichier** (render, split) : contient `output_file_id` + `download_url` (pre-signed URL S3 temporaire)
+            - **Split** : contient une liste `documents[]` avec un `file_id` + `download_url` par document extrait
+        error_message:
+          type: string
+          description: Message d'erreur (si failed)
+        submission_date:
+          type: string
+          format: date-time
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    UploadResponse:
+      type: object
+      required: [file_id, presigned_url]
+      properties:
+        file_id:
+          type: string
+          description: Identifiant unique du fichier (cle S3)
+        presigned_url:
+          type: string
+          format: uri
+          description: URL pre-signee pour telecharger le fichier
+
+    ServiceInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [production, beta, deprecated, disabled]
+        owner:
+          type: string
+        category:
+          type: string
+          enum: [vision, intelligence, generation, processing]
+        engines:
+          type: array
+          items:
+            type: string
+        doc_url:
+          type: string
+          format: uri
+
+    AuthConfig:
+      type: object
+      required: [keycloak_url, realm]
+      properties:
+        keycloak_url:
+          type: string
+          format: uri
+        realm:
+          type: string
+
+    # ──────────────────────────────────────────────
+    # CLIENT ADMIN SCHEMAS
+    # ──────────────────────────────────────────────
+    ClientCreateRequest:
+      type: object
+      required: [client_id]
+      properties:
+        client_id:
+          type: string
+          description: Identifiant unique du client
+        client_secret:
+          type: string
+          description: Secret pour l'auth HTTP Basic (optionnel si JWT)
+        is_active:
+          type: boolean
+          default: true
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientAuthorization'
+
+    ClientUpdateRequest:
+      type: object
+      properties:
+        client_secret:
+          type: string
+        is_active:
+          type: boolean
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientAuthorization'
+          description: Remplace toutes les autorisations (null pour garder les existantes)
+
+    ClientAuthorization:
+      type: object
+      required: [service]
+      properties:
+        service:
+          type: string
+          description: Nom du service (ou "all" pour tous)
+        quotas:
+          type:
+            - integer
+            - "null"
+          description: Nombre max de taches en attente pour ce client sur ce service
+
+    ClientResponse:
+      type: object
+      properties:
+        client_id:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientAuthorization'
+
+    ClientListResponse:
+      type: object
+      properties:
+        clients:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientResponse'
+
+    SeedResponse:
+      type: object
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
+    # ──────────────────────────────────────────────
+    # MONITORING SCHEMAS
+    # ──────────────────────────────────────────────
+    UsageItem:
+      type: object
+      properties:
+        client_id:
+          type: string
+        service:
+          type: string
+        status:
+          type: string
+        count:
+          type: integer
+
+    UsageResponse:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsageItem'
+
+    # ──────────────────────────────────────────────
+    # ERROR SCHEMAS
+    # ──────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          default: "error"
+        error:
+          type: object
+          properties:
+            number:
+              type: integer
+              description: Code d'erreur unique
+            description:
+              type: string
+            details:
+              type: string
+
+  # ──────────────────────────────────────────────
+  # SHARED RESPONSES
+  # ──────────────────────────────────────────────
+  responses:
+    TaskAccepted:
+      description: Tache acceptee, traitement en cours
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskAcceptedResponse'
+          examples:
+            default:
+              value:
+                task_id: "550e8400-e29b-41d4-a716-446655440000"
+                status: "pending"
+                poll_url: "/v1/tasks/550e8400-e29b-41d4-a716-446655440000"
+                submission_date: "2024-01-15T10:30:00Z"
+
+    ValidationError:
+      description: Corps de requete invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 400001
+                  description: "Erreur de validation"
+                  details: "Le champ 'file_id' est requis"
+
+    Unauthorized:
+      description: Authentification requise ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 401001
+                  description: "Client is not authorized"
+
+    Forbidden:
+      description: Client non autorise pour ce service
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 403001
+                  description: "Forbidden"
+
+    TooManyRequests:
+      description: Quota depasse (service ou client)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 429001
+                  description: "Too many requests"
+
+    ServiceNotFound:
+      description: Service inconnu
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 404001
+                  description: "Service not found"
+
+    TaskNotFound:
+      description: Tache inconnue
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 404002
+                  description: "Task not found"
+
+    ClientNotFound:
+      description: Client inconnu
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                status: "error"
+                error:
+                  number: 404003
+                  description: "Client not found"
