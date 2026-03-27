@@ -74,7 +74,7 @@ make logs
 ```
 api/
 ├── api/                    # Code de l'API FastAPI
-│   ├── api/v1/            # Routes API version 1
+│   ├── routes/            # Routes API (préfixe /v1, /internal dans main.py)
 │   ├── core/              # Configuration, base de données, sécurité
 │   ├── models/            # Modèles SQLAlchemy
 │   ├── repositories/      # Couche d'accès aux données
