@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 
-from api.api.v1.routes import metrics, services, status, tasks
 from api.core.config import settings
 from api.core.exception_handlers import register_exception_handlers
 from api.core.logger import logger
 from api.core.utils import get_version
 from api.repositories.client_config_repository import ClientConfigRepository
 from api.repositories.services_config_repository import ServicesConfigRepository
+from api.routes import metrics, services, status, tasks
 
 __version__, __name__ = get_version()
 
