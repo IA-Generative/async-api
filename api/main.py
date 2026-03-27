@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from api.api.v1.routes import metrics, services, status, tasks
+from api.routes import metrics, services, status, tasks
 from api.core.config import settings
 from api.core.exception_handlers import register_exception_handlers
 from api.core.logger import logger
