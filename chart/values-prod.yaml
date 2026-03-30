@@ -5,14 +5,14 @@ fullnameOverride: "async-api"
 api:
   # -- The number of application controller pods to run.
   # @section -- Api
-  replicaCount: 1
+  replicaCount: 2
   envFrom:
     - secretRef:
         name: async-api-s3
   env:
-    S3_ENDPOINT_URL: "https://brio-staging-api-data.s3.fr-par.scw.cloud"
+    S3_ENDPOINT_URL: "https://brio-prod-api-data.s3.fr-par.scw.cloud"
     S3_REGION_NAME: "fr-par"
-    S3_BUCKET_NAME: "brio-staging-api-data"
+    S3_BUCKET_NAME: "brio-prod-api-data"
   image:
     # -- Tag to use for the app.
     # @section -- Api
@@ -42,7 +42,7 @@ api:
           portNumber: null
         # -- Name of the host record.
         # @section -- Api
-        name: "async-api-staging.sdid-app-hp.cpin.numerique-interieur.com"
+        name: "async-api.sdid-app-hp.cpin.numerique-interieur.com"
         # -- Path type of the host record.
         # @section -- Api
         pathType: "Prefix"
@@ -52,9 +52,6 @@ api:
     # -- Enable TLS configuration.
     # @section -- Api
     tls: []
-    # - secretName: domain.local-tls
-    #   hosts:
-    #   - domain.local
   # -- Image credentials configuration.
   # @section -- Api
   imagePullSecrets:
@@ -68,25 +65,19 @@ api:
       memory: "256Mi"
       # -- CPU request for the app.
       # @section -- Api
-      cpu: "100m"
-      # Other stuff like GPU, etc could be added here.
-      # nvidia.com/gpu: "1"
+      cpu: "200m"
     limits:
       # -- Memory limit for the app.
       # @section -- Api
       memory: "2Gi"
       # -- CPU limit for the app.
       # @section -- Api
-      cpu: "500m"
-      # Other stuff like GPU, etc could be added here.
-      # nvidia.com/gpu: "1"
+      cpu: "1"
 
 # Workers configuration
 # @section -- Workers
 
 workers:
-  # -- Example worker demonstrating deployment with KEDA autoscaling
-  # @section -- Workers
   # -- Worker name (used for labeling and naming resources)
   # @section -- Workers
   - name: consumer
@@ -114,7 +105,7 @@ workers:
 
       # -- Number of replicas (ignored if KEDA autoscaling is enabled)
       # @section -- Workers
-      replicas: 1
+      replicas: 2
 
       # -- Image pull secrets for the worker
       # @section -- Workers
@@ -135,17 +126,17 @@ workers:
         requests:
           # -- CPU request
           # @section -- Workers
-          cpu: "100m"
+          cpu: "200m"
           # -- Memory request
           # @section -- Workers
-          memory: "128Mi"
+          memory: "256Mi"
         limits:
           # -- CPU limit
           # @section -- Workers
-          cpu: "500m"
+          cpu: "1"
           # -- Memory limit
           # @section -- Workers
-          memory: "512Mi"
+          memory: "1Gi"
 
       # -- Health check probes configuration
       # @section -- Workers
@@ -249,11 +240,6 @@ workers:
         # -- Target queue length to trigger scaling
         # @section -- Workers
         queueLength: "5"
-        # TriggerAuthentication: KEDA se connecte à RabbitMQ depuis son propre namespace,
-        # il ne peut pas résoudre le short hostname. Le secret référencé doit contenir
-        # l'URL AMQP complète avec FQDN, ex:
-        #   amqp://user:pass@async-api-rabbitmq-headless.NAMESPACE.svc.cluster.local:5672/
-        # Ajouter la clé BROKER_URL_FQDN dans le secret Vault staging/db-config.
         triggerAuth:
           enabled: true
           secretName: "async-api-db-config"
@@ -353,17 +339,17 @@ rabbitmq:
     # -- Enable RabbitMQ persistence using PVC
     enabled: true
     # -- RabbitMQ persistence size
-    size: 8Gi
+    size: 16Gi
   # -- RabbitMQ resources
   resources:
     # -- RabbitMQ resource limits
     limits:
-      cpu: 1
-      memory: 2Gi
+      cpu: 2
+      memory: 4Gi
     # -- RabbitMQ resource requests
     requests:
-      cpu: 100m
-      memory: 1Gi
+      cpu: 200m
+      memory: 2Gi
   # -- RabbitMQ service configuration
   metrics:
     # -- Enable RabbitMQ metrics
@@ -381,32 +367,25 @@ cnpg:
   imageName: ghcr.io/cloudnative-pg/postgresql:17.7
   pvcSize:
     # -- PVC size for data
-    data: 8Gi
+    data: 16Gi
     # -- PVC size for WAL
-    wal: 2Gi
+    wal: 4Gi
   # -- PostgreSQL resources
   resources:
     # -- PostgreSQL resource limits
     limits:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 1
+      memory: 2Gi
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 200m
+      memory: 512Mi
   monitoring:
     enabled: true
   backup:
     enabled: false
 
 pgadmin:
-  enabled: true
-  ingress:
-    enabled: true
-    hosts:
-      - host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
-        paths:
-          - path: /
-            pathType: Prefix
+  enabled: false
 
 # Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 vaultSecrets:
@@ -416,35 +395,29 @@ vaultSecrets:
         name: async-api-db-appuser
         type: kubernetes.io/basic-auth
       mount: asyncapi
-      vaultPath: staging/psql-user
+      vaultPath: prod/psql-user
       type: kv-v2
     - destination:
         name: async-api-db-superuser
         type: kubernetes.io/basic-auth
       mount: asyncapi
-      vaultPath: staging/psql-admin
+      vaultPath: prod/psql-admin
       type: kv-v2
     - destination:
         name: async-api-rabbitmq-credentials
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: staging/rabbitmq
+      vaultPath: prod/rabbitmq
       type: kv-v2
     - destination:
         name: async-api-db-config
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: staging/db-config
-      type: kv-v2
-    - destination:
-        name: async-api-pgadmin
-        type: kubernetes.io/opaque
-      mount: asyncapi
-      vaultPath: staging/pgadmin
+      vaultPath: prod/db-config
       type: kv-v2
     - destination:
         name: async-api-s3
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: staging/s3-credentials
+      vaultPath: prod/s3-credentials
       type: kv-v2

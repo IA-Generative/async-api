@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     LISTENER_HEALTH_CHECK_HOST: str = "0.0.0.0"  # noqa: S104
     LISTENER_HEALTH_CHECK_PORT: int = 8081
 
+    # S3 Configuration
+    S3_ACCESS_KEY: str | None = None
+    S3_SECRET_KEY: str | None = None
+    S3_ENDPOINT_URL: str | None = None
+    S3_REGION_NAME: str = "fr-par"
+    S3_BUCKET_NAME: str | None = None
+
     @property
     def database_url_from_components(self) -> sqlalchemy.URL:
         """Construct database URL from individual components using sqlalchemy.URL"""
