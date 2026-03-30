@@ -64,7 +64,7 @@ class TaskService:
             raise ServiceNotFound
 
         # Check client authorization on service
-        client_authorization = self.client_service.get_client_authorization_for_service(
+        client_authorization = await self.client_service.get_client_authorization_for_service(
             client_id=client_id,
             service=service,
         )
@@ -117,7 +117,7 @@ class TaskService:
             raise ServiceNotFound
 
         # Check client authorization on service
-        client_authorization = self.client_service.get_client_authorization_for_service(
+        client_authorization = await self.client_service.get_client_authorization_for_service(
             client_id=client_id,
             service=service,
         )
