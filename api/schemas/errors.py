@@ -122,3 +122,9 @@ class BodyValidationError(AppException):
     status_code = 400
     number = 400001
     description = "Body validation error"
+
+
+class StorageUploadError(AppException):
+    status_code = 500
+    number = 500002
+    description = "File upload failed"

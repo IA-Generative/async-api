@@ -2,6 +2,7 @@ from .callback import TaskCallback
 from .queue import QueueData, QueueTask
 from .service import ServiceInfo
 from .status import HealthResponse, ReadyComponent, ReadyResponse
+from .storage import StorageUploadResponse
 from .task import (
     Callback,
     TaskDataFailed,
@@ -22,6 +23,7 @@ __all__ = [
     "ReadyComponent",
     "ReadyResponse",
     "ServiceInfo",
+    "StorageUploadResponse",
     "TaskCallback",
     "TaskDataFailed",
     "TaskDataPending",
