@@ -26,6 +26,7 @@ dependencies = [
     "loguru>=0.7.3",
     "multidict>=6.6.3",
     "tenacity>=9.1.2",
+    "python-multipart>=0.0.22",
 ]
 
 [tool.ruff]
@@ -138,6 +139,7 @@ known-first-party = ["api", "listener"]
 dev = [
     "aiosqlite>=0.21.0",
     "coverage>=7.9.2",
+    "httpx>=0.28.1",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=7.0.0",

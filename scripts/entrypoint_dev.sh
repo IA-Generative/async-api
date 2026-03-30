@@ -37,6 +37,8 @@ start_listener_dev() {
 
 main() {
     echo "Mode: $APP (development)"
+    echo "📦 Syncing dependencies..."
+    uv sync
 
     case "${APP,,}" in
         "api")
