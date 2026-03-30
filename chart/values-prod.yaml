@@ -1,0 +1,423 @@
+# -- String to fully override the default application name.
+# @section -- General
+fullnameOverride: "async-api"
+
+api:
+  # -- The number of application controller pods to run.
+  # @section -- Api
+  replicaCount: 2
+  envFrom:
+    - secretRef:
+        name: async-api-s3
+  env:
+    S3_ENDPOINT_URL: "https://brio-prod-api-data.s3.fr-par.scw.cloud"
+    S3_REGION_NAME: "fr-par"
+    S3_BUCKET_NAME: "brio-prod-api-data"
+  image:
+    # -- Tag to use for the app.
+    # @section -- Api
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "v0.3.1"
+
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    # @section -- Api
+    enabled: true
+    # -- Defines which ingress controller will implement the resource.
+    # @section -- Api
+    className: "nginx"
+    # -- Additional ingress annotations.
+    # @section -- Api
+    annotations: {}
+    # -- Additional ingress labels.
+    # @section -- Api
+    labels: {}
+    hosts:
+      - backend:
+          # -- Name of the backend service linked to the host record (leave empty to use the app service).
+          # @section -- Api
+          serviceName: ""
+          # -- Port used by the backend service linked to the host record (leave null to use the app service port).
+          # @section -- Api
+          portNumber: null
+        # -- Name of the host record.
+        # @section -- Api
+        name: "async-api.sdid-app-hp.cpin.numerique-interieur.com"
+        # -- Path type of the host record.
+        # @section -- Api
+        pathType: "Prefix"
+        # -- Path of the host record to manage routing.
+        # @section -- Api
+        path: "/"
+    # -- Enable TLS configuration.
+    # @section -- Api
+    tls: []
+  # -- Image credentials configuration.
+  # @section -- Api
+  imagePullSecrets:
+    - name: "registry-pull-secret"
+      create: false
+
+  resources:
+    requests:
+      # -- Memory request for the app.
+      # @section -- Api
+      memory: "256Mi"
+      # -- CPU request for the app.
+      # @section -- Api
+      cpu: "200m"
+    limits:
+      # -- Memory limit for the app.
+      # @section -- Api
+      memory: "2Gi"
+      # -- CPU limit for the app.
+      # @section -- Api
+      cpu: "1"
+
+# Workers configuration
+# @section -- Workers
+
+workers:
+  # -- Worker name (used for labeling and naming resources)
+  # @section -- Workers
+  - name: consumer
+    # -- Worker type: 'deployment' for long-running processes, 'job' for one-time tasks
+    # @section -- Workers
+    type: deployment
+    # -- Enable/disable this worker
+    # @section -- Workers
+    enabled: true
+    # -- Deployment-specific configuration (only used when type=deployment)
+    # @section -- Workers
+    deploymentSpec:
+      # -- Container image configuration
+      # @section -- Workers
+      image:
+        # -- Image repository
+        # @section -- Workers
+        repository: "harbor.sdid.cpin.numerique-interieur.com/asyncapi/async-api-consumer"
+        # -- Image tag
+        # @section -- Workers
+        tag: "v0.3.1"
+        # -- Image pull policy
+        # @section -- Workers
+        pullPolicy: IfNotPresent
+
+      # -- Number of replicas (ignored if KEDA autoscaling is enabled)
+      # @section -- Workers
+      replicas: 2
+
+      # -- Image pull secrets for the worker
+      # @section -- Workers
+      imagePullSecrets:
+        - name: "registry-pull-secret"
+
+      # -- Container ports configuration
+      # @section -- Workers
+      ports:
+        # -- Health check port (used for probes and health service)
+        # @section -- Workers
+        health: 8080
+        metrics: 8080
+
+      # -- Resource limits and requests
+      # @section -- Workers
+      resources:
+        requests:
+          # -- CPU request
+          # @section -- Workers
+          cpu: "200m"
+          # -- Memory request
+          # @section -- Workers
+          memory: "256Mi"
+        limits:
+          # -- CPU limit
+          # @section -- Workers
+          cpu: "1"
+          # -- Memory limit
+          # @section -- Workers
+          memory: "1Gi"
+
+      # -- Health check probes configuration
+      # @section -- Workers
+      probes:
+        # -- Startup probe configuration
+        # @section -- Workers
+        startupProbe:
+          httpGet:
+            path: "/health"
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+          successThreshold: 1
+        # -- Readiness probe configuration
+        # @section -- Workers
+        readinessProbe:
+          httpGet:
+            path: "/ready"
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # -- Liveness probe configuration
+        # @section -- Workers
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+
+      # -- Environment variables as key-value pairs
+      # @section -- Workers
+      env:
+        - name: IN_QUEUE_NAME
+          value: "example_queue_in"
+        - name: OUT_QUEUE_NAME
+          value: "example_queue_out"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: CONSUMER_ENABLE_HEALTH_CHECK_SERVER
+          value: "true"
+        - name: CONSUMER_HEALTH_CHECK_PORT
+          value: "8080"
+        - name: CONSUMER_HEALTH_CHECK_HOST
+          value: "0.0.0.0"
+
+      # -- Container security context
+      # @section -- Workers
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+
+      # -- Pod security context
+      # @section -- Workers
+      podSecurityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+
+    # -- KEDA autoscaler configuration
+    # @section -- Workers
+    kedaAutoscaler:
+      # -- Enable KEDA autoscaling
+      # @section -- Workers
+      enabled: false
+      # -- Minimum number of replicas
+      # @section -- Workers
+      minReplicaCount: 1
+      # -- Maximum number of replicas
+      # @section -- Workers
+      maxReplicaCount: 10
+      # -- Number of replicas when no workload (0 to scale to zero)
+      # @section -- Workers
+      idleReplicaCount: 0
+      # -- Polling interval in seconds
+      # @section -- Workers
+      pollingInterval: 30
+      # -- Cooldown period in seconds
+      # @section -- Workers
+      cooldownPeriod: 300
+
+      # -- RabbitMQ trigger configuration for KEDA
+      # @section -- Workers
+      rabbitmq:
+        # -- Queue name to monitor
+        # @section -- Workers
+        queueName: "example_queue_in"
+        # -- Target queue length to trigger scaling
+        # @section -- Workers
+        queueLength: "5"
+        triggerAuth:
+          enabled: true
+          secretName: "async-api-db-config"
+          secretKey: "BROKER_URL_FQDN"
+
+      # -- Advanced scaling behavior configuration
+      # @section -- Workers
+      behavior:
+        scaleDown:
+          # -- Stabilization window for scale down
+          # @section -- Workers
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 50
+              periodSeconds: 60
+        scaleUp:
+          # -- Stabilization window for scale up
+          # @section -- Workers
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+            - type: Pods
+              value: 4
+              periodSeconds: 15
+          selectPolicy: Max
+
+      # -- Fallback configuration when KEDA fails
+      # @section -- Workers
+      fallback:
+        # -- Number of failures before fallback
+        # @section -- Workers
+        failureThreshold: 3
+        # -- Number of replicas during fallback
+        # @section -- Workers
+        replicas: 2
+
+    # -- RBAC configuration
+    # @section -- Workers
+    role:
+      # -- Create ServiceAccount and RBAC resources
+      # @section -- Workers
+      create: true
+      # -- RBAC rules for the worker
+      # @section -- Workers
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "configmaps", "secrets"]
+          verbs: ["get", "list", "watch"]
+
+    # -- Prometheus metrics configuration
+    # @section -- Workers
+    metrics:
+      # -- Enable metrics endpoint
+      # @section -- Workers
+      enabled: false
+      # -- Metrics endpoint path
+      # @section -- Workers
+      path: "/metrics"
+      # -- ServiceMonitor configuration for Prometheus Operator
+      # @section -- Workers
+      serviceMonitor:
+        # -- Create ServiceMonitor for Prometheus
+        # @section -- Workers
+        enabled: true
+        # -- Scrape interval
+        # @section -- Workers
+        interval: 30s
+        # -- Additional labels for ServiceMonitor
+        # @section -- Workers
+        labels: {}
+        # -- Additional annotations for ServiceMonitor
+        # @section -- Workers
+        annotations: {}
+
+# RabbitMQ configuration
+# @section -- RabbitMQ
+rabbitmq:
+  # -- Enable RabbitMQ subchart
+  enabled: true
+  ## @section RabbitMQ Authentication
+  auth:
+    ## @param auth.enabled Enable RabbitMQ authentication
+    enabled: true
+    ## @param auth.username RabbitMQ default username
+    username: asynctask
+    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
+    existingSecret: "async-api-rabbitmq-credentials"
+    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
+    existingPasswordKey: "password"
+    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
+    existingErlangCookieKey: "erlang-cookie"
+  # -- RabbitMQ persistence configuration
+  persistence:
+    # -- Enable RabbitMQ persistence using PVC
+    enabled: true
+    # -- RabbitMQ persistence size
+    size: 16Gi
+  # -- RabbitMQ resources
+  resources:
+    # -- RabbitMQ resource limits
+    limits:
+      cpu: 2
+      memory: 4Gi
+    # -- RabbitMQ resource requests
+    requests:
+      cpu: 200m
+      memory: 2Gi
+  # -- RabbitMQ service configuration
+  metrics:
+    # -- Enable RabbitMQ metrics
+    enabled: false
+    # -- RabbitMQ metrics service monitor
+    serviceMonitor:
+      # -- Enable RabbitMQ metrics service monitor
+      enabled: false
+
+# PostgreSQL CNPG configuration
+# @section -- PostgreSQL
+cnpg:
+  # -- Enable PostgreSQL subchart
+  enabled: true
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
+  pvcSize:
+    # -- PVC size for data
+    data: 16Gi
+    # -- PVC size for WAL
+    wal: 4Gi
+  # -- PostgreSQL resources
+  resources:
+    # -- PostgreSQL resource limits
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  monitoring:
+    enabled: true
+  backup:
+    enabled: false
+
+pgadmin:
+  enabled: false
+
+# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
+vaultSecrets:
+  enabled: true
+  items:
+    - destination:
+        name: async-api-db-appuser
+        type: kubernetes.io/basic-auth
+      mount: asyncapi
+      vaultPath: prod/psql-user
+      type: kv-v2
+    - destination:
+        name: async-api-db-superuser
+        type: kubernetes.io/basic-auth
+      mount: asyncapi
+      vaultPath: prod/psql-admin
+      type: kv-v2
+    - destination:
+        name: async-api-rabbitmq-credentials
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: prod/rabbitmq
+      type: kv-v2
+    - destination:
+        name: async-api-db-config
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: prod/db-config
+      type: kv-v2
+    - destination:
+        name: async-api-s3
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: prod/s3-credentials
+      type: kv-v2
