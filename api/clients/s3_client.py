@@ -1,4 +1,5 @@
 import logging
+from typing import BinaryIO
 
 import boto3
 from botocore.config import Config
@@ -34,6 +35,10 @@ class S3Client:
     def upload_file(self, bucket_name: str, file_key: str, file_path: str) -> None:
         self.client.upload_file(Filename=file_path, Bucket=bucket_name, Key=file_key)
         logging.info("Uploaded file to bucket: %s/%s", bucket_name, file_key)
+
+    def upload_fileobj(self, bucket_name: str, file_key: str, file_obj: BinaryIO) -> None:
+        self.client.upload_fileobj(Fileobj=file_obj, Bucket=bucket_name, Key=file_key)
+        logging.info("Uploaded file object to bucket: %s/%s", bucket_name, file_key)
 
     def list_files(self, bucket_name: str, prefix: str) -> list[str]:
         response = self.client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
