@@ -41,11 +41,7 @@ class ClientService:
             return None
 
         for auth in client.authorizations:
-            if auth.service == "all":
-                return auth
-
-        for auth in client.authorizations:
-            if auth.service == service:
+            if auth.service == "all" or auth.service == service:
                 return auth
 
         return None
