@@ -54,6 +54,13 @@ Cette API permet de :
    - 🐰 **RabbitMQ Management** : [http://localhost:15672](http://localhost:15672) (login: `kalo` / password: `kalo`)
    - 🩺 **Health Check** : [http://localhost:8080/internal/health](http://localhost:8080/internal/health)
 
+6. **Créer un client de test dans la base de données**
+
+   ```bash
+   docker compose exec db psql -U postgres -d tasks -c \
+     "INSERT INTO client (client_id, name, secret) VALUES ('prisme', 'PRISME', '2026');"
+   ```
+
 ### Vérification du déploiement
 
 ```bash
