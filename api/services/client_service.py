@@ -4,7 +4,7 @@ from fastapi import Depends
 
 from api.models.client import Client, ClientServiceAuthorization
 from api.repositories.client_repository import ClientRepository
-from api.schemas.client import ClientCreateRequest, ClientResponse
+from api.schemas.client import ClientCreateRequest, ClientResponse, ClientUpdateRequest
 from api.schemas.errors import ClientAlreadyExists, ClientNotFound
 
 
@@ -72,6 +72,25 @@ class ClientService:
         client = await self.client_repository.get_client_by_client_id(client_id)
         if not client:
             raise ClientNotFound(details=f"Client '{client_id}' not found.")
+        return self._to_response(client)
+
+    async def update_client(self, client_id: str, body: ClientUpdateRequest) -> ClientResponse:
+        client = await self.client_repository.get_client_by_client_id(client_id)
+        if not client:
+            raise ClientNotFound(details=f"Client '{client_id}' not found.")
+
+        if body.client_secret is not None:
+            client.client_secret = body.client_secret
+
+        if body.is_active is not None:
+            client.is_active = body.is_active
+
+        if body.authorizations is not None:
+            client.authorizations = [
+                ClientServiceAuthorization(service=auth.service, quotas=auth.quotas) for auth in body.authorizations
+            ]
+
+        client = await self.client_repository.update_client(client)
         return self._to_response(client)
 
     @staticmethod
