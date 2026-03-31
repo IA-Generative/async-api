@@ -12,8 +12,13 @@ class ClientRepository:
     def __init__(self, db: Annotated[AsyncSession, Depends(get_db_session)]) -> None:
         self.db: AsyncSession = db
 
-    async def get_client_by_client_id(self, client_id: str) -> Client | None:
+    async def get_active_client_by_client_id(self, client_id: str) -> Client | None:
         stmt = select(Client).where((Client.client_id == client_id) & (Client.is_active.is_(True)))
+        result = await self.db.execute(statement=stmt)
+        return result.scalar_one_or_none()
+
+    async def get_client_by_client_id(self, client_id: str) -> Client | None:
+        stmt = select(Client).where(Client.client_id == client_id)
         result = await self.db.execute(statement=stmt)
         return result.scalar_one_or_none()
 

@@ -21,7 +21,7 @@ class ClientService:
         """Check if the provided client ID is valid.
         Returns True if the client ID exists and is active, False otherwise.
         """
-        client = await self.client_repository.get_client_by_client_id(client_id)
+        client = await self.client_repository.get_active_client_by_client_id(client_id)
         if client is None:
             return False
 
@@ -38,7 +38,7 @@ class ClientService:
         """Check if a client is allowed to use a specific service.
         Returns ClientServiceAuthorization if the client is allowed, None otherwise.
         """
-        client = await self.client_repository.get_client_by_client_id(client_id)
+        client = await self.client_repository.get_active_client_by_client_id(client_id)
         if not client:
             return None
 
