@@ -22,8 +22,8 @@ spec:
     metadata:
       {{- if or .Values.api.podAnnotations .Values.api.secrets .Values.api.env }}
       annotations:
-        {{- include "helper.checksum" (list $ "/api/configmap.yaml") | nindent 8 }}
-        {{- include "helper.checksum" (list $ "/api/secret.yaml") | nindent 8 }}
+        {{- include "helper.checksum" (list $ "/api/config/services-configmap.yaml") | nindent 8 }}
+        {{- include "helper.checksum" (list $ "/api/config/clients-configmap.yaml") | nindent 8 }}
         {{- if .Values.api.podAnnotations }}
         {{- toYaml .Values.api.podAnnotations | nindent 8 }}
         {{- end }}
