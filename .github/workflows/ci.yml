@@ -54,6 +54,8 @@ jobs:
         helm repo update
     - name: Helm dependency build
       run: helm dependency build chart/
+    - name: Helm lint (staging)
+      run: helm lint chart/ --values chart/values-common.yaml --values chart/values-staging.yaml
     - name: Helm template (staging)
       run: helm template chart/ --values chart/values-common.yaml --values chart/values-staging.yaml
 
