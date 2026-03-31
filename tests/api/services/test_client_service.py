@@ -1,60 +1,76 @@
+from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
 
 from api.models.client import Client, ClientServiceAuthorization
+from api.schemas.client import AuthorizationRequest, ClientCreateRequest
+from api.schemas.errors import ClientAlreadyExists, ClientNotFound
 from api.services.client_service import ClientService
+
+
+def _make_client(
+    id: int,
+    client_id: str,
+    name: str,
+    *,
+    client_secret: str | None = None,
+    authorizations: list[ClientServiceAuthorization] | None = None,
+) -> Client:
+    return Client(
+        id=id,
+        client_id=client_id,
+        client_secret=client_secret,
+        name=name,
+        is_active=True,
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+        authorizations=authorizations or [],
+    )
+
+
+CLIENT1 = _make_client(1, "client1_id", "Client 1", client_secret="client1_secret")
+CLIENT2 = _make_client(2, "client2_id", "Client 2")
+CLIENT3 = _make_client(
+    3,
+    "client3_id",
+    "Client 3",
+    client_secret="client3_secret",
+    authorizations=[
+        ClientServiceAuthorization(id=1, client_id=3, service="example_service", quotas=100),
+        ClientServiceAuthorization(id=2, client_id=3, service="another_service", quotas=None),
+    ],
+)
+CLIENT4 = _make_client(
+    4,
+    "client4_id",
+    "Client 4",
+    client_secret="client4_secret",
+    authorizations=[
+        ClientServiceAuthorization(id=3, client_id=4, service="all", quotas=100),
+    ],
+)
+
+_DATA = {
+    "client1_id": CLIENT1,
+    "client2_id": CLIENT2,
+    "client3_id": CLIENT3,
+    "client4_id": CLIENT4,
+}
 
 
 @pytest.fixture
 def client_repository_mock() -> AsyncMock:
     mock = AsyncMock()
+    mock.get_client_by_client_id.side_effect = lambda client_id: _DATA.get(client_id)
+    mock.get_all_clients.return_value = list(_DATA.values())
+    mock.client_id_exists.return_value = False
+    def _fake_create(client: Client) -> Client:
+        client.created_at = datetime(2026, 1, 1)
+        client.updated_at = datetime(2026, 1, 1)
+        return client
 
-    client1 = Client(
-        id=1,
-        client_id="client1_id",
-        client_secret="client1_secret",
-        name="Client 1",
-        is_active=True,
-        authorizations=[],
-    )
-    client2 = Client(
-        id=2,
-        client_id="client2_id",
-        client_secret=None,
-        name="Client 2",
-        is_active=True,
-        authorizations=[],
-    )
-    client3 = Client(
-        id=3,
-        client_id="client3_id",
-        client_secret="client3_secret",
-        name="Client 3",
-        is_active=True,
-        authorizations=[
-            ClientServiceAuthorization(id=1, client_id=3, service="example_service", quotas=100),
-            ClientServiceAuthorization(id=2, client_id=3, service="another_service", quotas=None),
-        ],
-    )
-    client4 = Client(
-        id=4,
-        client_id="client4_id",
-        client_secret="client4_secret",
-        name="Client 4",
-        is_active=True,
-        authorizations=[
-            ClientServiceAuthorization(id=3, client_id=4, service="all", quotas=100),
-        ],
-    )
-
-    data = {
-        "client1_id": client1,
-        "client2_id": client2,
-        "client3_id": client3,
-        "client4_id": client4,
-    }
-    mock.get_client_by_client_id.side_effect = lambda client_id: data.get(client_id)
+    mock.create_client.side_effect = _fake_create
     return mock
 
 
@@ -97,3 +113,64 @@ async def test_get_client_authorization_for_service(client_repository_mock: Asyn
     assert authorization is not None
     assert authorization.service == "all"
     assert authorization.quotas == 100
+
+
+@pytest.mark.asyncio
+async def test_create_client(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    body = ClientCreateRequest(
+        client_id="new_client",
+        name="New Client",
+        client_secret="secret",
+        is_active=True,
+        authorizations=[AuthorizationRequest(service="example_service", quotas=10)],
+    )
+    response = await service.create_client(body)
+
+    assert response.client_id == "new_client"
+    assert response.name == "New Client"
+    assert len(response.authorizations) == 1
+    assert response.authorizations[0].service == "example_service"
+    client_repository_mock.create_client.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_create_client_already_exists(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+    client_repository_mock.client_id_exists.return_value = True
+
+    body = ClientCreateRequest(client_id="client1_id", name="Duplicate")
+
+    with pytest.raises(ClientAlreadyExists):
+        await service.create_client(body)
+
+
+@pytest.mark.asyncio
+async def test_list_clients(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    result = await service.list_clients()
+
+    assert len(result) == 4
+    assert result[0].client_id == "client1_id"
+    client_repository_mock.get_all_clients.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_client(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    result = await service.get_client("client3_id")
+
+    assert result.client_id == "client3_id"
+    assert result.name == "Client 3"
+    assert len(result.authorizations) == 2
+
+
+@pytest.mark.asyncio
+async def test_get_client_not_found(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    with pytest.raises(ClientNotFound):
+        await service.get_client("unknown_client")

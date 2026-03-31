@@ -2,8 +2,10 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from api.models.client import ClientServiceAuthorization
+from api.models.client import Client, ClientServiceAuthorization
 from api.repositories.client_repository import ClientRepository
+from api.schemas.client import ClientCreateRequest, ClientResponse
+from api.schemas.errors import ClientAlreadyExists, ClientNotFound
 
 
 class ClientService:
@@ -45,3 +47,42 @@ class ClientService:
                 return auth
 
         return None
+
+    async def create_client(self, body: ClientCreateRequest) -> ClientResponse:
+        if await self.client_repository.client_id_exists(body.client_id):
+            raise ClientAlreadyExists(details=f"Client '{body.client_id}' already exists.")
+
+        client = Client(
+            client_id=body.client_id,
+            name=body.name,
+            client_secret=body.client_secret,
+            is_active=body.is_active,
+            authorizations=[
+                ClientServiceAuthorization(service=auth.service, quotas=auth.quotas) for auth in body.authorizations
+            ],
+        )
+        client = await self.client_repository.create_client(client)
+        return self._to_response(client)
+
+    async def list_clients(self) -> list[ClientResponse]:
+        clients = await self.client_repository.get_all_clients()
+        return [self._to_response(c) for c in clients]
+
+    async def get_client(self, client_id: str) -> ClientResponse:
+        client = await self.client_repository.get_client_by_client_id(client_id)
+        if not client:
+            raise ClientNotFound(details=f"Client '{client_id}' not found.")
+        return self._to_response(client)
+
+    @staticmethod
+    def _to_response(client: Client) -> ClientResponse:
+        return ClientResponse(
+            client_id=client.client_id,
+            name=client.name,
+            is_active=client.is_active,
+            created_at=client.created_at,
+            updated_at=client.updated_at,
+            authorizations=[
+                {"service": auth.service, "quotas": auth.quotas} for auth in client.authorizations
+            ],
+        )
