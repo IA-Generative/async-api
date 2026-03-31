@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/IA-Generative/async-api/compare/v0.3.0...v0.4.0) (2026-03-31)
+
+
+### Features
+
+* **storage:** add route to upload file to s3 ([#31](https://github.com/IA-Generative/async-api/issues/31)) ([7750cfd](https://github.com/IA-Generative/async-api/commit/7750cfdc19fac780faf331db1516e125b86e1e13))
+
+
+### Bug Fixes
+
+* **ci:** Remove artifact name from build workflow ([713d0f6](https://github.com/IA-Generative/async-api/commit/713d0f6f5e70b1ee0d48b4cdb24c75cacb861d91))
+
 ## [0.3.0](https://github.com/IA-Generative/async-api/compare/v0.2.0...v0.3.0) (2026-02-27)
 
 
