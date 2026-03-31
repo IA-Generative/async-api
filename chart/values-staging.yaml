@@ -9,6 +9,8 @@ api:
   envFrom:
     - secretRef:
         name: async-api-s3
+    - secretRef:
+        name: async-api-admin-credentials
   env:
     S3_ENDPOINT_URL: "https://brio-staging-api-data.s3.fr-par.scw.cloud"
     S3_REGION_NAME: "fr-par"
@@ -447,4 +449,10 @@ vaultSecrets:
         type: kubernetes.io/opaque
       mount: asyncapi
       vaultPath: staging/s3-credentials
+      type: kv-v2
+    - destination:
+        name: async-api-admin-credentials
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/admin-credentials
       type: kv-v2
