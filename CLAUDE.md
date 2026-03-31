@@ -23,6 +23,8 @@ Routes (`api/routes/`) → Services (`api/services/`) → Repositories (`api/rep
 
 Schemas (Pydantic) live in `api/schemas/`.
 
+**Rule:** All business logic must live in services. Routes must only call the service layer and handle HTTP status codes/errors — no domain logic, model construction, or repository calls in routes.
+
 ## Key endpoints
 
 - `POST /v1/services/{service}/tasks` — Submit a task

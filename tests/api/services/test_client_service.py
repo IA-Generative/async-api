@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from api.models.client import Client, ClientServiceAuthorization
-from api.schemas.client import AuthorizationRequest, ClientCreateRequest
+from api.schemas.client import AuthorizationRequest, ClientCreateRequest, ClientUpdateRequest
 from api.schemas.errors import ClientAlreadyExists, ClientNotFound
 from api.services.client_service import ClientService
 
@@ -62,15 +62,18 @@ _DATA = {
 @pytest.fixture
 def client_repository_mock() -> AsyncMock:
     mock = AsyncMock()
+    mock.get_active_client_by_client_id.side_effect = lambda client_id: _DATA.get(client_id)
     mock.get_client_by_client_id.side_effect = lambda client_id: _DATA.get(client_id)
     mock.get_all_clients.return_value = list(_DATA.values())
     mock.client_id_exists.return_value = False
-    def _fake_create(client: Client) -> Client:
-        client.created_at = datetime(2026, 1, 1)
+
+    def _fake_persist(client: Client) -> Client:
+        client.created_at = client.created_at or datetime(2026, 1, 1)
         client.updated_at = datetime(2026, 1, 1)
         return client
 
-    mock.create_client.side_effect = _fake_create
+    mock.create_client.side_effect = _fake_persist
+    mock.update_client.side_effect = _fake_persist
     return mock
 
 
@@ -174,3 +177,41 @@ async def test_get_client_not_found(client_repository_mock: AsyncMock) -> None:
 
     with pytest.raises(ClientNotFound):
         await service.get_client("unknown_client")
+
+
+@pytest.mark.asyncio
+async def test_update_client(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    body = ClientUpdateRequest(
+        client_secret="new_secret",
+        is_active=False,
+        authorizations=[AuthorizationRequest(service="new_service", quotas=50)],
+    )
+    result = await service.update_client("client1_id", body)
+
+    assert result.client_id == "client1_id"
+    assert result.is_active is False
+    assert len(result.authorizations) == 1
+    assert result.authorizations[0].service == "new_service"
+    client_repository_mock.update_client.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_client_partial(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    body = ClientUpdateRequest(is_active=False)
+    result = await service.update_client("client3_id", body)
+
+    assert result.is_active is False
+    assert len(result.authorizations) == 2
+
+
+@pytest.mark.asyncio
+async def test_update_client_not_found(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    body = ClientUpdateRequest(is_active=False)
+    with pytest.raises(ClientNotFound):
+        await service.update_client("unknown_client", body)

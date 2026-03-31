@@ -16,6 +16,14 @@ class ClientCreateRequest(BaseModel):
     authorizations: list[AuthorizationRequest] = Field(default=[], description="Liste des autorisations par service")
 
 
+class ClientUpdateRequest(BaseModel):
+    client_secret: str | None = Field(default=None, description="Nouveau secret du client")
+    is_active: bool | None = Field(default=None, description="Activer ou désactiver le client")
+    authorizations: list[AuthorizationRequest] | None = Field(
+        default=None, description="Nouvelle liste des autorisations (remplace l'existante)",
+    )
+
+
 class AuthorizationResponse(BaseModel):
     service: str
     quotas: int | None = None

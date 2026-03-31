@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from api.core.security import admin_auth_guard
-from api.schemas.client import ClientCreateRequest, ClientResponse
+from api.schemas.client import ClientCreateRequest, ClientResponse, ClientUpdateRequest
 from api.services.client_service import ClientService
 
 router = APIRouter(tags=["Clients"])
@@ -43,3 +43,16 @@ async def get_client(
     _admin: Annotated[str, Depends(admin_auth_guard)],
 ) -> ClientResponse:
     return await client_service.get_client(client_id)
+
+
+@router.put(
+    path="/clients/{client_id}",
+    summary="Modifier un client",
+)
+async def update_client(
+    client_id: Annotated[str, Path(description="Identifiant du client")],
+    body: Annotated[ClientUpdateRequest, Body()],
+    client_service: Annotated[ClientService, Depends(ClientService)],
+    _admin: Annotated[str, Depends(admin_auth_guard)],
+) -> ClientResponse:
+    return await client_service.update_client(client_id, body)
