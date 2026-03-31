@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None = None
     BROKER_URL: str | None = None
 
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin"  # noqa: S105
+
     API_SENDER_RETRY: int = 3  # 0, 1:1s, 2:4s, 3:9s, ...
     API_LOG_LEVEL: str = "INFO"
     LISTENER_LOG_LEVEL: str = "INFO"
