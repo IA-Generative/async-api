@@ -58,6 +58,10 @@ jobs:
       run: helm lint chart/ --values chart/values-common.yaml --values chart/values-staging.yaml
     - name: Helm template (staging)
       run: helm template chart/ --values chart/values-common.yaml --values chart/values-staging.yaml
+    - name: Helm lint (prod)
+      run: helm lint chart/ --values chart/values-common.yaml --values chart/values-prod.yaml
+    - name: Helm template (prod)
+      run: helm template chart/ --values chart/values-common.yaml --values chart/values-prod.yaml
 
   # Workaround for required status check in protection branches (see. https://github.com/orgs/community/discussions/13690)
   all-jobs-passed:
