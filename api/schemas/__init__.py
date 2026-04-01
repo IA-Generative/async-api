@@ -14,15 +14,18 @@ from .task import (
     TaskRequest,
     TaskResponse,
 )
+from .usage import ClientUsageResponse, ServiceUsage
 
 __all__ = [
     "Callback",
+    "ClientUsageResponse",
     "HealthResponse",
     "QueueData",
     "QueueTask",
     "ReadyComponent",
     "ReadyResponse",
     "ServiceInfo",
+    "ServiceUsage",
     "StorageUploadResponse",
     "TaskCallback",
     "TaskDataFailed",
