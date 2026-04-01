@@ -3,5 +3,6 @@ from .queue_service import QueueSender
 from .service_service import ServiceService
 from .storage_service import StorageService
 from .task_service import TaskService
+from .usage_service import UsageService
 
-__all__ = ["MetricsService", "QueueSender", "ServiceService", "StorageService", "TaskService"]
+__all__ = ["MetricsService", "QueueSender", "ServiceService", "StorageService", "TaskService", "UsageService"]
