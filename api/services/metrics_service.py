@@ -5,6 +5,7 @@ from fastapi import Depends
 from prometheus_client import Counter, Gauge, Histogram
 
 from api.repositories import MetricsTaskRepository
+from api.repositories.metrics_repository import TaskCountByStatusAndServiceView
 from api.schemas.enum import TaskStatus
 
 # Constants for Prometheus metrics
@@ -76,13 +77,16 @@ class MetricsService:
 
         count_result = await self.taskRepo.count_tasks_per_status_and_service()
         for metric in count_result:
-            if metric.status == TaskStatus.PENDING:
-                self.TASKS_PENDING_COUNT.labels(service=metric.service, client_id=metric.client_id).set(metric.count)
-            elif metric.status == TaskStatus.IN_PROGRESS:
-                self.TASKS_IN_PROGRESS_COUNT.labels(
-                    service=metric.service, client_id=metric.client_id,
-                ).set(metric.count)
-            elif metric.status == TaskStatus.SUCCESS:
-                self.TASKS_SUCCESS_COUNT.labels(service=metric.service, client_id=metric.client_id).set(metric.count)
-            elif metric.status == TaskStatus.FAILURE:
-                self.TASKS_FAILURE_COUNT.labels(service=metric.service, client_id=metric.client_id).set(metric.count)
+            self._update_task_count_gauge(metric)
+
+    def _update_task_count_gauge(self, metric: TaskCountByStatusAndServiceView) -> None:
+        labels = {"service": metric.service, "client_id": metric.client_id}
+        match metric.status:
+            case TaskStatus.PENDING:
+                self.TASKS_PENDING_COUNT.labels(**labels).set(metric.count)
+            case TaskStatus.IN_PROGRESS:
+                self.TASKS_IN_PROGRESS_COUNT.labels(**labels).set(metric.count)
+            case TaskStatus.SUCCESS:
+                self.TASKS_SUCCESS_COUNT.labels(**labels).set(metric.count)
+            case TaskStatus.FAILURE:
+                self.TASKS_FAILURE_COUNT.labels(**labels).set(metric.count)
