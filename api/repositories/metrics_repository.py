@@ -56,13 +56,20 @@ class MetricsTaskRepository:
             list[TaskCountByStatusAndServiceView]: A list of task counts grouped by status and service.
 
         """
-        statement = select(Task.service, Task.status, Task.client_id, func.count(Task.service)).group_by(
+        statement = select(
+            Task.service, Task.status, Task.client_id, func.count(Task.service).label("count"),
+        ).group_by(
             Task.service,
             Task.status,
             Task.client_id,
         )
         rows = await self.db.execute(statement=statement)
-        return [TaskCountByStatusAndServiceView(x[0], x[1], x[2], x[3]) for x in rows.all()]
+        return [
+            TaskCountByStatusAndServiceView(
+                service=row.service, status=row.status, client_id=row.client_id, count=row.count,
+            )
+            for row in rows.all()
+        ]
 
     async def running_and_pending_tasks(self) -> list[PendingAndRunningTaskView]:
         rows = await self.db.execute(
@@ -71,6 +78,12 @@ class MetricsTaskRepository:
             ),
         )
         return [
-            PendingAndRunningTaskView(service=x[0], status=x[1], client_id=x[2], submition_date=x[3], start_date=x[4])
-            for x in rows.all()
+            PendingAndRunningTaskView(
+                service=row.service,
+                status=row.status,
+                client_id=row.client_id,
+                submition_date=row.submition_date,
+                start_date=row.start_date,
+            )
+            for row in rows.all()
         ]
