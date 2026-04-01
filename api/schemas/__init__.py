@@ -16,21 +16,30 @@ from .task import (
 )
 from .usage import ClientUsageResponse, ServiceUsage
 
-__all__ = [
-    # callback
+_callback_schemas = [
     "TaskCallback",
-    # queue
+]
+
+_queue_schemas = [
     "QueueData",
     "QueueTask",
-    # service
+]
+
+_service_schemas = [
     "ServiceInfo",
-    # status
+]
+
+_status_schemas = [
     "HealthResponse",
     "ReadyComponent",
     "ReadyResponse",
-    # storage
+]
+
+_storage_schemas = [
     "StorageUploadResponse",
-    # task
+]
+
+_task_schemas = [
     "Callback",
     "TaskDataFailed",
     "TaskDataPending",
@@ -40,7 +49,20 @@ __all__ = [
     "TaskInfo",
     "TaskRequest",
     "TaskResponse",
-    # usage
+]
+
+# usage
+_usage_schemas = [
     "ClientUsageResponse",
     "ServiceUsage",
+]
+
+__all__ = [
+    *_callback_schemas,
+    *_queue_schemas,
+    *_service_schemas,
+    *_status_schemas,
+    *_storage_schemas,
+    *_task_schemas,
+    *_usage_schemas,
 ]
