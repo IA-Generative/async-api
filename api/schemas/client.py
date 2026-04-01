@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuthorizationRequest(BaseModel):
@@ -9,11 +9,27 @@ class AuthorizationRequest(BaseModel):
 
 
 class ClientCreateRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "client_id": "my_client",
+                "name": "My Client",
+                "client_secret": "my_secret",
+                "is_active": True,
+                "authorizations": [
+                    {"service": "my_service", "quotas": 100},
+                ],
+            },
+        },
+    )
+
     client_id: str = Field(description="Identifiant unique du client")
     name: str = Field(description="Nom du client")
     client_secret: str | None = Field(default=None, description="Secret du client (optionnel)")
     is_active: bool = Field(default=True, description="Client actif ou non")
-    authorizations: list[AuthorizationRequest] = Field(default=[], description="Liste des autorisations par service")
+    authorizations: list[AuthorizationRequest] = Field(
+        default_factory=list, description="Liste des autorisations par service",
+    )
 
 
 class ClientUpdateRequest(BaseModel):
