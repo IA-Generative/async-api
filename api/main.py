@@ -7,7 +7,7 @@ from api.core.exception_handlers import register_exception_handlers
 from api.core.logger import logger
 from api.core.utils import get_version
 from api.repositories.services_config_repository import ServicesConfigRepository
-from api.routes import clients, metrics, services, status, storage, tasks
+from api.routes import clients, metrics, services, status, storage, tasks, usage
 
 __version__, __name__ = get_version()
 
@@ -39,4 +39,5 @@ app.include_router(router=storage.router, prefix=RoutePrefix.STORAGE, tags=["Sto
 app.include_router(router=clients.router, prefix=RoutePrefix.INTERNAL, tags=["Clients"])
 app.include_router(router=metrics.router, prefix=RoutePrefix.INTERNAL, tags=["Metrics"])
 app.include_router(router=status.router, prefix=RoutePrefix.INTERNAL, tags=["Status"])
+app.include_router(router=usage.router, prefix=RoutePrefix.INTERNAL, tags=["Usage"])
 logger.info("API routes registered successfully.")
