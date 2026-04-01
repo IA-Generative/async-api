@@ -5,7 +5,7 @@ from fastapi import Depends
 from prometheus_client import Counter, Gauge, Histogram
 
 from api.repositories import MetricsTaskRepository
-from api.repositories.metrics_repository import TaskCountByStatusAndServiceView
+from api.repositories.metrics_repository import PendingAndRunningTaskView, TaskCountByStatusAndServiceView
 from api.schemas.enum import TaskStatus
 
 # Constants for Prometheus metrics
@@ -66,18 +66,23 @@ class MetricsService:
         self.TASKS_LATENCY_RUNNING.clear()
         self.TASKS_LATENCY_PENDING.clear()
         for metric in latency_result:
-            if metric.status == TaskStatus.PENDING and metric.submition_date:
-                self.TASKS_LATENCY_PENDING.labels(service=metric.service, client_id=metric.client_id).observe(
-                    (now - metric.submition_date).total_seconds(),
-                )
-            elif metric.status == TaskStatus.IN_PROGRESS and metric.start_date:
-                self.TASKS_LATENCY_RUNNING.labels(service=metric.service, client_id=metric.client_id).observe(
-                    (now - metric.start_date).total_seconds(),
-                )
+            self._observe_task_latency(metric, now)
 
         count_result = await self.taskRepo.count_tasks_per_status_and_service()
         for metric in count_result:
             self._update_task_count_gauge(metric)
+
+    def _observe_task_latency(self, metric: PendingAndRunningTaskView, now: datetime) -> None:
+        labels = {"service": metric.service, "client_id": metric.client_id}
+        match metric.status:
+            case TaskStatus.PENDING if metric.submition_date:
+                self.TASKS_LATENCY_PENDING.labels(**labels).observe(
+                    (now - metric.submition_date).total_seconds(),
+                )
+            case TaskStatus.IN_PROGRESS if metric.start_date:
+                self.TASKS_LATENCY_RUNNING.labels(**labels).observe(
+                    (now - metric.start_date).total_seconds(),
+                )
 
     def _update_task_count_gauge(self, metric: TaskCountByStatusAndServiceView) -> None:
         labels = {"service": metric.service, "client_id": metric.client_id}
