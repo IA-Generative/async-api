@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Annotated
 
@@ -7,6 +8,12 @@ from fastapi import Depends
 from api.repositories.usage_repository import UsageRepository
 from api.schemas.enum import TaskStatus
 from api.schemas.usage import ClientUsageResponse, ServiceUsage
+
+
+@dataclass
+class _UsageCounts:
+    success_count: int = 0
+    failure_count: int = 0
 
 
 class UsageService:
@@ -27,20 +34,18 @@ class UsageService:
             since=since,
         )
 
-        usage_map: dict[str, dict[str, int]] = defaultdict(
-            lambda: {"success_count": 0, "failure_count": 0},
-        )
+        usage_map: defaultdict[str, _UsageCounts] = defaultdict(_UsageCounts)
         for row in rows:
             if row.status == TaskStatus.SUCCESS:
-                usage_map[row.service]["success_count"] = row.count
+                usage_map[row.service].success_count = row.count
             elif row.status == TaskStatus.FAILURE:
-                usage_map[row.service]["failure_count"] = row.count
+                usage_map[row.service].failure_count = row.count
 
         services = [
             ServiceUsage(
                 service=svc,
-                success_count=counts["success_count"],
-                failure_count=counts["failure_count"],
+                success_count=counts.success_count,
+                failure_count=counts.failure_count,
             )
             for svc, counts in sorted(usage_map.items())
         ]
