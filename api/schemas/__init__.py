@@ -17,24 +17,30 @@ from .task import (
 from .usage import ClientUsageResponse, ServiceUsage
 
 __all__ = [
-    "Callback",
-    "ClientUsageResponse",
-    "HealthResponse",
+    # callback
+    "TaskCallback",
+    # queue
     "QueueData",
     "QueueTask",
+    # service
+    "ServiceInfo",
+    # status
+    "HealthResponse",
     "ReadyComponent",
     "ReadyResponse",
-    "ServiceInfo",
-    "ServiceUsage",
+    # storage
     "StorageUploadResponse",
-    "TaskCallback",
+    # task
+    "Callback",
     "TaskDataFailed",
     "TaskDataPending",
     "TaskDataProgress",
     "TaskDataSuccess",
     "TaskErrorResponse",
     "TaskInfo",
-    "TaskInfo",
     "TaskRequest",
     "TaskResponse",
+    # usage
+    "ClientUsageResponse",
+    "ServiceUsage",
 ]
