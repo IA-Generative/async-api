@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/IA-Generative/async-api/compare/v0.4.0...v0.5.0) (2026-03-31)
+
+
+### Features
+
+* add client routes ([#36](https://github.com/IA-Generative/async-api/issues/36)) ([24fa0d8](https://github.com/IA-Generative/async-api/commit/24fa0d8ce0d21bc193b68f1e30f039a1610759b5))
+* add client update route ([#37](https://github.com/IA-Generative/async-api/issues/37)) ([ca3eed4](https://github.com/IA-Generative/async-api/commit/ca3eed4415df99a66f9e01bc7022e4d63a8b51b3))
+
 ## [0.4.0](https://github.com/IA-Generative/async-api/compare/v0.3.0...v0.4.0) (2026-03-31)
 
 
