@@ -66,6 +66,11 @@ Schemas (Pydantic) live in `api/schemas/`.
 - `make migration-upgrade` — Apply DB migrations
 - `make logs-api` / `make logs-listener` — View service logs
 
+## Code style
+
+- **Strict typing:** Always use the most precise type possible for variables, return values, and parameters. Prefer `TypedDict`, `dataclass`, `NamedTuple`, or Pydantic models over generic `dict[str, ...]` when the structure is known.
+- **No magic strings:** Never use raw string literals as dict keys or repeated identifiers. Extract them into enums, constants, or typed attribute access (e.g. dataclass fields).
+
 ## Before committing
 
 - Run linting: `uv run ruff check .`
