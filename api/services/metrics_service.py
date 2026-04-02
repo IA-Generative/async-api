@@ -54,6 +54,10 @@ class MetricsService:
         buckets=TASKS_LATENCY_BUCKETS,
     )
 
+    @classmethod
+    def increment_tasks_submitted(cls, service: str, client_id: str) -> None:
+        cls.TASKS_SUBMITTED_TOTAL.labels(service=service, client_id=client_id).inc()
+
     def __init__(
         self,
         metrics_repository: Annotated[MetricsTaskRepository, Depends(MetricsTaskRepository)],
@@ -67,6 +71,11 @@ class MetricsService:
         self.TASKS_LATENCY_PENDING.clear()
         for metric in latency_result:
             self._observe_task_latency(metric, now)
+
+        self.TASKS_PENDING_COUNT.clear()
+        self.TASKS_IN_PROGRESS_COUNT.clear()
+        self.TASKS_SUCCESS_COUNT.clear()
+        self.TASKS_FAILURE_COUNT.clear()
 
         count_result = await self.taskRepo.count_tasks_per_status_and_service()
         for metric in count_result:
