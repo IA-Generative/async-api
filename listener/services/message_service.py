@@ -159,26 +159,17 @@ class MessageService:
         task.response = json.dumps(data.response)
         end_date: datetime.datetime = datetime.datetime.now()
         task.end_date = end_date
-        callback_dict: dict = task.callback  # type: ignore
-        if callback_dict is not None:
-            message = TaskResponse(
-                status=TaskStatus.SUCCESS,
-                data=TaskDataSuccess(
-                    task_id=task_id,
-                    result=data.response,
-                    submission_date=task.submition_date,
-                    start_date=task.start_date,
-                    end_date=end_date,
-                ),
-            ).model_dump(mode="json")
-            logger.info(f"Sending callback for task_id '{task_id}'")
-            try:
-                await self.notification_service.notify(callback_dict, message)
-                logger.info(f"Callback sent successfully for task_id '{task_id}'")
-                task.notification_status = CallbackStatus.SUCCESS
-            except Exception as e:
-                logger.error(f"Callback failure for task_id '{task_id}': {e}")
-                task.notification_status = CallbackStatus.FAILURE
+        await self._notify_callback(
+            task=task,
+            task_id=task_id,
+            data=TaskDataSuccess(
+                task_id=task_id,
+                result=data.response,
+                submission_date=task.submition_date,
+                start_date=task.start_date,
+                end_date=end_date,
+            ),
+        )
 
     async def process_failure_message(
         self,
@@ -198,23 +189,37 @@ class MessageService:
         task.end_date = end_date
         task.error_message = data.error_message
 
-        callback_dict = task.callback
-        if callback_dict is not None:
-            message = TaskResponse(
-                status=TaskStatus.SUCCESS,
-                data=TaskDataFailed(
-                    task_id=task_id,
-                    error_message=data.error_message,
-                    submission_date=task.submition_date,
-                    start_date=task.start_date,
-                    end_date=end_date,
-                ),
-            ).model_dump(mode="json")
-            logger.info(f"Sending callback for task_id '{task_id}'")
-            try:
-                await self.notification_service.notify(callback_dict, message)
-                logger.info(f"Callback sent successfully for task_id '{task_id}'")
-                task.notification_status = CallbackStatus.SUCCESS
-            except Exception as e:
-                logger.error(f"Callback failure for task_id '{task_id}': {e}")
-                task.notification_status = CallbackStatus.FAILURE
+        await self._notify_callback(
+            task=task,
+            task_id=task_id,
+            data=TaskDataFailed(
+                task_id=task_id,
+                error_message=data.error_message,
+                submission_date=task.submition_date,
+                start_date=task.start_date,
+                end_date=end_date,
+            ),
+        )
+
+    async def _notify_callback(
+        self,
+        task: "Task",
+        task_id: str,
+        data: TaskDataSuccess | TaskDataFailed,
+    ) -> None:
+        callback_dict: dict | None = task.callback  # type: ignore
+        if callback_dict is None:
+            return
+
+        message = TaskResponse(
+            status=TaskStatus.SUCCESS,
+            data=data,
+        ).model_dump(mode="json")
+        logger.info(f"Sending callback for task_id '{task_id}'")
+        try:
+            await self.notification_service.notify(callback_dict, message)
+            logger.info(f"Callback sent successfully for task_id '{task_id}'")
+            task.notification_status = CallbackStatus.SUCCESS
+        except Exception as e:
+            logger.error(f"Callback failure for task_id '{task_id}': {e}")
+            task.notification_status = CallbackStatus.FAILURE
