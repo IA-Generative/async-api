@@ -139,6 +139,23 @@ async def test_create_client(client_repository_mock: AsyncMock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_create_client_with_empty_authorizations(client_repository_mock: AsyncMock) -> None:
+    service = ClientService(client_repository_mock)
+
+    body = ClientCreateRequest(
+        client_id="new_client",
+        name="New Client",
+        authorizations=[],
+    )
+    response = await service.create_client(body)
+
+    assert response.client_id == "new_client"
+    assert response.name == "New Client"
+    assert response.authorizations == []
+    client_repository_mock.create_client.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_create_client_already_exists(client_repository_mock: AsyncMock) -> None:
     service = ClientService(client_repository_mock)
     client_repository_mock.client_id_exists.return_value = True
