@@ -215,7 +215,9 @@ class MessageService:
             status=TaskStatus.SUCCESS,
             data=data,
         ).model_dump(mode="json")
+
         logger.info(f"Sending callback for task_id '{task_id}'")
+
         try:
             await self.notification_service.notify(callback_dict, message)
             logger.info(f"Callback sent successfully for task_id '{task_id}'")
