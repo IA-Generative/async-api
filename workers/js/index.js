@@ -119,6 +119,16 @@ class MessageSender {
         })
     }
 
+    async sendProgressMessage(task_id, progress) {
+        await this._sendMessage({
+            task_id: task_id,
+            data: {
+                message_type: "progress",
+                progress: progress
+            }
+        })
+    }
+
     async sendSuccessMessage(task_id, result) {
         await this._sendMessage({
             task_id: task_id,
@@ -223,7 +233,7 @@ class TaskManager {
                     let result = await task.run(submissionMessage.task_id,submissionMessage.data.body,(p) => this.messageSender.sendProgressMessage(submissionMessage.task_id,p));
                     await this.messageSender.sendSuccessMessage(submissionMessage.task_id,result);
                 } catch (err) {
-                    await this.messageSender.sendFailureMessage(submissionMessage.task_id,err);
+                    await this.messageSender.sendFailureMessage(submissionMessage.task_id, err.message || String(err));
                 }
             } else {
                 console.error(`[Listener ${channelIndex}] Message invalide : ${content}`);
