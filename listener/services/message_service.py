@@ -27,7 +27,7 @@ class SuccessMessage(BaseModel):
 
 class FailureMessage(BaseModel):
     message_type: Literal["failure"]
-    error_message: str = Field(default=..., description="Cause de l'erreur.")
+    error_message: str | dict = Field(default=..., description="Cause de l'erreur.")
 
 
 class ProgressMessage(BaseModel):
@@ -187,14 +187,15 @@ class MessageService:
         end_date = datetime.datetime.now()
         task.status = TaskStatus.FAILURE
         task.end_date = end_date
-        task.error_message = data.error_message
+        error_message = data.error_message if isinstance(data.error_message, str) else json.dumps(data.error_message)
+        task.error_message = error_message
 
         await self._notify_callback(
             task=task,
             task_id=task_id,
             data=TaskDataFailed(
                 task_id=task_id,
-                error_message=data.error_message,
+                error_message=error_message,
                 submission_date=task.submition_date,
                 start_date=task.start_date,
                 end_date=end_date,
