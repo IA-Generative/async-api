@@ -166,6 +166,6 @@ class TaskService:
         task_data = await self.task_repository.create_task_record(task_data_create=task_obj)
         task_position = await self.task_repository.get_task_position_by_id(task_id=task_id, service=service)
 
-        MetricsService.TASKS_SUBMITTED_TOTAL.labels(service=service, client_id=client_id).inc()
+        MetricsService.increment_tasks_submitted(service=service, client_id=client_id)
 
         return TaskDataPending(task_id=task_id, task_position=task_position, submission_date=task_data.submition_date)
