@@ -5,18 +5,26 @@ from prometheus_client import Gauge, Histogram
 
 from api.repositories.metrics_repository import PendingAndRunningTaskView, TaskCountByStatusAndServiceView
 from api.schemas.enum import TaskStatus
+from api.services.metrics_constants import (
+    TASKS_FAILURE_COUNT,
+    TASKS_IN_PROGRESS_COUNT,
+    TASKS_LATENCY_PENDING,
+    TASKS_LATENCY_RUNNING,
+    TASKS_PENDING_COUNT,
+    TASKS_SUCCESS_COUNT,
+)
 from api.services.metrics_service import MetricsService
 
 
 @pytest.fixture(autouse=True)
 def _clean_metrics() -> None:
     """Clear all metrics before each test."""
-    MetricsService.TASKS_PENDING_COUNT.clear()
-    MetricsService.TASKS_IN_PROGRESS_COUNT.clear()
-    MetricsService.TASKS_SUCCESS_COUNT.clear()
-    MetricsService.TASKS_FAILURE_COUNT.clear()
-    MetricsService.TASKS_LATENCY_PENDING.clear()
-    MetricsService.TASKS_LATENCY_RUNNING.clear()
+    TASKS_PENDING_COUNT.clear()
+    TASKS_IN_PROGRESS_COUNT.clear()
+    TASKS_SUCCESS_COUNT.clear()
+    TASKS_FAILURE_COUNT.clear()
+    TASKS_LATENCY_PENDING.clear()
+    TASKS_LATENCY_RUNNING.clear()
 
 
 class TestUpdateTaskCountGauge:
@@ -34,34 +42,34 @@ class TestUpdateTaskCountGauge:
         service = MetricsService.__new__(MetricsService)
         metric = self._build_metric(TaskStatus.PENDING, 5)
         service._update_task_count_gauge(metric)
-        assert self._get_gauge_value(MetricsService.TASKS_PENDING_COUNT) == 5
+        assert self._get_gauge_value(TASKS_PENDING_COUNT) == 5
 
     def test_in_progress_status(self) -> None:
         service = MetricsService.__new__(MetricsService)
         metric = self._build_metric(TaskStatus.IN_PROGRESS, 3)
         service._update_task_count_gauge(metric)
-        assert self._get_gauge_value(MetricsService.TASKS_IN_PROGRESS_COUNT) == 3
+        assert self._get_gauge_value(TASKS_IN_PROGRESS_COUNT) == 3
 
     def test_success_status(self) -> None:
         service = MetricsService.__new__(MetricsService)
         metric = self._build_metric(TaskStatus.SUCCESS, 10)
         service._update_task_count_gauge(metric)
-        assert self._get_gauge_value(MetricsService.TASKS_SUCCESS_COUNT) == 10
+        assert self._get_gauge_value(TASKS_SUCCESS_COUNT) == 10
 
     def test_failure_status(self) -> None:
         service = MetricsService.__new__(MetricsService)
         metric = self._build_metric(TaskStatus.FAILURE, 7)
         service._update_task_count_gauge(metric)
-        assert self._get_gauge_value(MetricsService.TASKS_FAILURE_COUNT) == 7
+        assert self._get_gauge_value(TASKS_FAILURE_COUNT) == 7
 
     def test_unknown_status_does_nothing(self) -> None:
         service = MetricsService.__new__(MetricsService)
         metric = self._build_metric("unknown_status", 99)
         service._update_task_count_gauge(metric)
-        assert self._get_gauge_value(MetricsService.TASKS_PENDING_COUNT) == 0
-        assert self._get_gauge_value(MetricsService.TASKS_IN_PROGRESS_COUNT) == 0
-        assert self._get_gauge_value(MetricsService.TASKS_SUCCESS_COUNT) == 0
-        assert self._get_gauge_value(MetricsService.TASKS_FAILURE_COUNT) == 0
+        assert self._get_gauge_value(TASKS_PENDING_COUNT) == 0
+        assert self._get_gauge_value(TASKS_IN_PROGRESS_COUNT) == 0
+        assert self._get_gauge_value(TASKS_SUCCESS_COUNT) == 0
+        assert self._get_gauge_value(TASKS_FAILURE_COUNT) == 0
 
     def test_different_clients(self) -> None:
         service = MetricsService.__new__(MetricsService)
@@ -69,8 +77,8 @@ class TestUpdateTaskCountGauge:
         metric_b = self._build_metric(TaskStatus.PENDING, 8, client_id="prisme")
         service._update_task_count_gauge(metric_a)
         service._update_task_count_gauge(metric_b)
-        assert self._get_gauge_value(MetricsService.TASKS_PENDING_COUNT, client_id="astree") == 2
-        assert self._get_gauge_value(MetricsService.TASKS_PENDING_COUNT, client_id="prisme") == 8
+        assert self._get_gauge_value(TASKS_PENDING_COUNT, client_id="astree") == 2
+        assert self._get_gauge_value(TASKS_PENDING_COUNT, client_id="prisme") == 8
 
 
 class TestObserveTaskLatency:
@@ -97,7 +105,7 @@ class TestObserveTaskLatency:
         now = datetime.now()
         metric = self._build_metric(TaskStatus.PENDING, submition_date=now - timedelta(seconds=10))
         svc._observe_task_latency(metric, now)
-        count = MetricsService.TASKS_LATENCY_PENDING.labels(service="svc1", client_id="client1")._sum.get()
+        count = TASKS_LATENCY_PENDING.labels(service="svc1", client_id="client1")._sum.get()
         assert count == pytest.approx(10.0, abs=0.1)
 
     def test_pending_without_submition_date_does_nothing(self) -> None:
@@ -105,7 +113,7 @@ class TestObserveTaskLatency:
         now = datetime.now()
         metric = self._build_metric(TaskStatus.PENDING, submition_date=None)
         svc._observe_task_latency(metric, now)
-        count = MetricsService.TASKS_LATENCY_PENDING.labels(service="svc1", client_id="client1")._sum.get()
+        count = TASKS_LATENCY_PENDING.labels(service="svc1", client_id="client1")._sum.get()
         assert count == pytest.approx(0.0)
 
     def test_in_progress_with_start_date(self) -> None:
@@ -113,7 +121,7 @@ class TestObserveTaskLatency:
         now = datetime.now()
         metric = self._build_metric(TaskStatus.IN_PROGRESS, start_date=now - timedelta(seconds=30))
         svc._observe_task_latency(metric, now)
-        count = MetricsService.TASKS_LATENCY_RUNNING.labels(service="svc1", client_id="client1")._sum.get()
+        count = TASKS_LATENCY_RUNNING.labels(service="svc1", client_id="client1")._sum.get()
         assert count == pytest.approx(30.0, abs=0.1)
 
     def test_in_progress_without_start_date_does_nothing(self) -> None:
@@ -121,7 +129,7 @@ class TestObserveTaskLatency:
         now = datetime.now()
         metric = self._build_metric(TaskStatus.IN_PROGRESS, start_date=None)
         svc._observe_task_latency(metric, now)
-        count = MetricsService.TASKS_LATENCY_RUNNING.labels(service="svc1", client_id="client1")._sum.get()
+        count = TASKS_LATENCY_RUNNING.labels(service="svc1", client_id="client1")._sum.get()
         assert count == pytest.approx(0.0)
 
     def test_different_clients(self) -> None:
@@ -135,7 +143,7 @@ class TestObserveTaskLatency:
         )
         svc._observe_task_latency(metric_a, now)
         svc._observe_task_latency(metric_b, now)
-        sum_a = MetricsService.TASKS_LATENCY_PENDING.labels(service="svc1", client_id="astree")._sum.get()
-        sum_b = MetricsService.TASKS_LATENCY_PENDING.labels(service="svc1", client_id="prisme")._sum.get()
+        sum_a = TASKS_LATENCY_PENDING.labels(service="svc1", client_id="astree")._sum.get()
+        sum_b = TASKS_LATENCY_PENDING.labels(service="svc1", client_id="prisme")._sum.get()
         assert sum_a == pytest.approx(5.0, abs=0.1)
         assert sum_b == pytest.approx(20.0, abs=0.1)
