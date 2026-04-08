@@ -313,10 +313,10 @@ workers:
     metrics:
       # -- Enable metrics endpoint
       # @section -- Workers
-      enabled: false
+      enabled: true
       # -- Metrics endpoint path
       # @section -- Workers
-      path: "/metrics"
+      path: "/internal/metrics"
       # -- ServiceMonitor configuration for Prometheus Operator
       # @section -- Workers
       serviceMonitor:
