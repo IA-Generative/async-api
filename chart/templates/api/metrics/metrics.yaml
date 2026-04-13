@@ -13,9 +13,9 @@ metadata:
 spec:
   type: {{ .Values.api.metrics.service.type }}
   ports:
-  - port: {{ .Values.api.metrics.service.port }} 
+  - port: {{ .Values.api.metrics.service.port }}
     targetPort: {{ .Values.api.metrics.service.targetPort }}
     protocol: TCP
-    name: metrics
+    name: {{ .Values.api.metrics.service.portName }}
   selector: {{- include "helper.selectorLabels" . | nindent 4 }}
 {{- end }}
