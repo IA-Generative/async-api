@@ -67,14 +67,13 @@ api:
     # @section -- api
     enabled: true
     # -- Metrics endpoint path
-    # @section -- api
-    path: "/internal/metrics"
     # -- ServiceMonitor configuration for Prometheus Operator
     # @section -- api
     serviceMonitor:
       # -- Create ServiceMonitor for Prometheus
       # @section -- api
       enabled: true
+      path: "/internal/metrics"
       # -- Scrape interval
       # @section -- api
       interval: 30s
