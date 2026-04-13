@@ -7,4 +7,5 @@ requires-python = ">=3.13"
 dependencies = [
     "loguru>=0.7.3",
     "mic-worker==0.1.2",
+    "pydantic-settings>=2.0",
 ]

@@ -1,10 +1,10 @@
 import asyncio
 import logging
-import os
 import sys
 from typing import Any
 
 from loguru import logger
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from mic_worker.typed import (
     AsyncProgressProtocol,
@@ -14,6 +14,21 @@ from mic_worker.typed import (
     Infinite,
 )
 from mic_worker.worker import AsyncWorkerRunner
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
+
+    BROKER_URL: str
+    IN_QUEUE_NAME: str
+    OUT_QUEUE_NAME: str
+    WORKER_CONCURRENCY: int = 3
+    HEALTH_CHECK_HOST: str = "0.0.0.0"  # noqa: S104
+    HEALTH_CHECK_PORT: int = 8083
+    LOG_LEVEL: str = "INFO"
+
+
+settings = Settings()
 
 
 class InterceptHandler(logging.Handler):
@@ -33,7 +48,7 @@ class InterceptHandler(logging.Handler):
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 logger.remove()
-logger.add(sys.stdout, level="INFO")
+logger.add(sys.stdout, level=settings.LOG_LEVEL)
 
 
 class GenerationRenderTask(AsyncTaskInterface):
@@ -46,29 +61,24 @@ class GenerationRenderTask(AsyncTaskInterface):
     async def execute(
         self,
         incoming_message: IncomingMessage,
-        progress: AsyncProgressProtocol,
+        progress: AsyncProgressProtocol,  # noqa: ARG002
     ) -> Any:  # noqa: ANN401
         logger.info(f"Task received: task_id={incoming_message.task_id}")
         return {}
 
 
-BROKER_URL = os.environ["BROKER_URL"]
-IN_QUEUE_NAME = os.environ["IN_QUEUE_NAME"]
-OUT_QUEUE_NAME = os.environ["OUT_QUEUE_NAME"]
-WORKER_CONCURRENCY = int(os.environ.get("WORKER_CONCURRENCY", "3"))
-HEALTH_CHECK_HOST = os.environ.get("HEALTH_CHECK_HOST", "0.0.0.0")
-HEALTH_CHECK_PORT = int(os.environ.get("HEALTH_CHECK_PORT", "8083"))
-
-
 async def main() -> None:
     logger.info("Starting generation-render worker")
     runner = AsyncWorkerRunner(
-        amqp_url=BROKER_URL,
-        amqp_in_queue=IN_QUEUE_NAME,
-        amqp_out_queue=OUT_QUEUE_NAME,
+        amqp_url=settings.BROKER_URL,
+        amqp_in_queue=settings.IN_QUEUE_NAME,
+        amqp_out_queue=settings.OUT_QUEUE_NAME,
         task_provider=GenerationRenderTask,
-        worker_mode=Infinite(concurrency=WORKER_CONCURRENCY),
-        health_check_config=HealthCheckConfig(host=HEALTH_CHECK_HOST, port=HEALTH_CHECK_PORT),
+        worker_mode=Infinite(concurrency=settings.WORKER_CONCURRENCY),
+        health_check_config=HealthCheckConfig(
+            host=settings.HEALTH_CHECK_HOST,
+            port=settings.HEALTH_CHECK_PORT,
+        ),
     )
     await runner.start()
     logger.info("generation-render worker stopped")
