@@ -9,3 +9,9 @@
   # quotas: 1000                        # Default: No quotas
   in_queue: in_queue_python             # Default: <svc>_queue_in
   out_queue: out_queue_python           # Default: <svc>_queue_out
+
+- name: generation-render
+  quotas: 1000
+  json_schema: ./config/schemas/generation-render.json
+  in_queue: generation_render_queue_in
+  out_queue: generation_render_queue_out
