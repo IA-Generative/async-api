@@ -70,19 +70,10 @@ api:
     # -- ServiceMonitor configuration for Prometheus Operator
     # @section -- api
     serviceMonitor:
-      # -- Create ServiceMonitor for Prometheus
-      # @section -- api
-      enabled: true
-      path: "/internal/metrics"
-      # -- Scrape interval
-      # @section -- api
-      interval: 30s
-      # -- Additional labels for ServiceMonitor
-      # @section -- Workers
-      labels: {}
-      # -- Additional annotations for ServiceMonitor
-      # @section -- Workers
-      annotations: {}
+      endpoints:
+      - path: "/internal/metrics"
+        honorLabels: false
+        interval: 30s
 
   resources:
     requests:
