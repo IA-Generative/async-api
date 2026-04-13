@@ -62,17 +62,20 @@ api:
   imagePullSecrets:
     - name: "registry-pull-secret"
       create: false
-  metrics:
-    # -- Enable metrics endpoint
-    # @section -- api
+metrics:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: metrics        # named port — matches Service port name
+    targetPort: 8080     # actual container port
+    labels: {}
+    annotations: {}
+  serviceMonitor:
     enabled: true
-    # -- Metrics endpoint path
-    # -- ServiceMonitor configuration for Prometheus Operator
-    # @section -- api
-    serviceMonitor:
-      enabled: true
-      endpoints:
-      - path: "/internal/metrics"
+    labels: {}
+    annotations: {}
+    endpoints:
+      - path: /internal/metrics
         honorLabels: false
         interval: 30s
 
