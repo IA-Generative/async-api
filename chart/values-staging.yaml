@@ -66,8 +66,9 @@ api:
     enabled: true
     service:
       type: ClusterIP
-      port: metrics        # string name — used by ServiceMonitor endpoint
-      targetPort: 8080     # int — used by Service targetPort
+      port: 8080           # int — Service.spec.ports[].port requires int32
+      targetPort: 8080     # int — Service.spec.ports[].targetPort
+      portName: metrics    # string — used as the port name, referenced by ServiceMonitor
       labels: {}
       annotations: {}
     serviceMonitor:
