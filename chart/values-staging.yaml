@@ -70,6 +70,7 @@ api:
     # -- ServiceMonitor configuration for Prometheus Operator
     # @section -- api
     serviceMonitor:
+      enabled: true
       endpoints:
       - path: "/internal/metrics"
         honorLabels: false
