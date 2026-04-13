@@ -62,22 +62,22 @@ api:
   imagePullSecrets:
     - name: "registry-pull-secret"
       create: false
-metrics:
-  enabled: true
-  service:
-    type: ClusterIP
-    port: metrics        # named port — matches Service port name
-    targetPort: 8080     # actual container port
-    labels: {}
-    annotations: {}
-  serviceMonitor:
+  metrics:
     enabled: true
-    labels: {}
-    annotations: {}
-    endpoints:
-      - path: /internal/metrics
-        honorLabels: false
-        interval: 30s
+    service:
+      type: ClusterIP
+      port: metrics        # named port — matches Service port name
+      targetPort: 8080     # actual container port
+      labels: {}
+      annotations: {}
+    serviceMonitor:
+      enabled: true
+      labels: {}
+      annotations: {}
+      endpoints:
+        - path: /internal/metrics
+          honorLabels: false
+          interval: 30s
 
   resources:
     requests:
