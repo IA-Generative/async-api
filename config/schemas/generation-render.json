@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "file_id": {
+      "type": "string",
+      "description": "Identifiant du fichier template .odt préalablement uploadé via POST /v1/storage/upload",
+      "examples": ["client1/a1b2c3d4/info_procureur.odt"]
+    },
+    "data": {
+      "type": "object",
+      "description": "Dictionnaire clé-valeur des placeholders à remplir dans le template. La clé correspond au nom du placeholder, la valeur à la chaîne à insérer.",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "examples": [
+        {
+          "tribunal_judiciaire_competent": "Nice",
+          "courriel_tribunal_judiciaire": "nice@tj.com",
+          "identite_complete_etranger": "Madame SCHLIENGER ANAIS",
+          "date_courrier": "23.03.2026"
+        }
+      ]
+    }
+  },
+  "required": ["file_id", "data"],
+  "additionalProperties": false
+}
