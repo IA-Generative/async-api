@@ -21,6 +21,7 @@ services:
     - .env.example
     environment:
       - APP=api
+      - SERVICES_CONFIG_FILE=./config/services.yaml
 
   listener:
     image: github.com/titigmr/asyncapi:v0.1.0
@@ -48,6 +49,7 @@ services:
     -  .env.example
     environment:
       - APP=listener
+      - SERVICES_CONFIG_FILE=./config/services.yaml
 
   consumer:
     image: github.com/titigmr/consumer:v0.1.0
