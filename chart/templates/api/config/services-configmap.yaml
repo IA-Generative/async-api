@@ -1,13 +1,13 @@
-{{- if and .Values.config.services.content (not .Values.config.services.fromSecret.name) -}}
+{{- if .Files.Get "config/services.yaml" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ if and .Values.config.services.fromSecret.name (ne .Values.config.services.fromSecret.name "") }}{{ .Values.config.services.fromSecret.name }}{{ else }}{{ printf "%s-%s" (include "helper.fullname" .) "services-config" }}{{ end }}
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "services-config" }}
   labels:
     {{- include "helper.labels" (dict "root" . "componentName" "config") | nindent 4 }}
     app.kubernetes.io/component: configuration
     async-api.io/config-type: services
 data:
-  {{ .Values.config.services.fromSecret.key | default "services.yaml" }}: |
-{{ .Values.config.services.content | toYaml | indent 4 }}
+  services.yaml: |
+{{ .Files.Get "config/services.yaml" | indent 4 }}
 {{- end -}}

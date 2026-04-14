@@ -23,7 +23,7 @@ spec:
       {{- if or .Values.api.podAnnotations .Values.api.secrets .Values.api.env }}
       annotations:
         {{- include "helper.checksum" (list $ "/api/config/services-configmap.yaml") | nindent 8 }}
-        {{- include "helper.checksum" (list $ "/api/config/clients-configmap.yaml") | nindent 8 }}
+        {{- include "helper.checksum" (list $ "/api/config/schemas-configmap.yaml") | nindent 8 }}
         {{- if .Values.api.podAnnotations }}
         {{- toYaml .Values.api.podAnnotations | nindent 8 }}
         {{- end }}
@@ -84,13 +84,9 @@ spec:
             name: {{ .Values.config.urlExistingSecret }}
         {{- end }}
         env:
-        {{- if or .Values.config.services.content .Values.config.services.fromSecret.name }}
+        {{- if .Files.Get "config/services.yaml" }}
         - name: SERVICES_CONFIG_FILE
-          value: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.services.fromSecret.key | default "services.yaml") | quote }}
-        {{- end }}
-        {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
-        - name: CLIENTS_CONFIG_FILE
-          value: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.clients.fromSecret.key | default "clients.yaml") | quote }}
+          value: {{ printf "%s/%s" .Values.config.mountPath "services.yaml" | quote }}
         {{- end }}
         ports:
         - name: http
@@ -118,19 +114,13 @@ spec:
         {{- end }}
         resources: {{- toYaml .Values.api.resources | nindent 10 }}
         volumeMounts:
-        {{- if or .Values.config.services.content .Values.config.services.fromSecret.name }}
+        {{- if .Files.Get "config/services.yaml" }}
         - name: services-config
-          mountPath: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.services.fromSecret.key | default "services.yaml") }}
-          subPath: {{ .Values.config.services.fromSecret.key | default "services.yaml" }}
+          mountPath: {{ printf "%s/%s" .Values.config.mountPath "services.yaml" }}
+          subPath: services.yaml
           readOnly: true
         {{- end }}
-        {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
-        - name: clients-config
-          mountPath: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.clients.fromSecret.key | default "clients.yaml") }}
-          subPath: {{ .Values.config.clients.fromSecret.key | default "clients.yaml" }}
-          readOnly: true
-        {{- end }}
-        {{- if or .Values.config.schemas.files .Values.config.schemas.fromSecret.name }}
+        {{- if .Files.Glob "config/schemas/*.json" }}
         - name: schemas-config
           mountPath: {{ printf "%s/schemas" .Values.config.mountPath }}
           readOnly: true
@@ -175,13 +165,9 @@ spec:
         env:
         - name: APP
           value: listener
-        {{- if or .Values.config.services.content .Values.config.services.fromSecret.name }}
+        {{- if .Files.Get "config/services.yaml" }}
         - name: SERVICES_CONFIG_FILE
-          value: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.services.fromSecret.key | default "services.yaml") | quote }}
-        {{- end }}
-        {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
-        - name: CLIENTS_CONFIG_FILE
-          value: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.clients.fromSecret.key | default "clients.yaml") | quote }}
+          value: {{ printf "%s/%s" .Values.config.mountPath "services.yaml" | quote }}
         {{- end }}
         ports:
         - name: health
@@ -204,19 +190,13 @@ spec:
         {{- end }}
         resources: {{- toYaml .Values.api.listener.resources | nindent 10 }}
         volumeMounts:
-        {{- if or .Values.config.services.content .Values.config.services.fromSecret.name }}
+        {{- if .Files.Get "config/services.yaml" }}
         - name: services-config
-          mountPath: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.services.fromSecret.key | default "services.yaml") }}
-          subPath: {{ .Values.config.services.fromSecret.key | default "services.yaml" }}
+          mountPath: {{ printf "%s/%s" .Values.config.mountPath "services.yaml" }}
+          subPath: services.yaml
           readOnly: true
         {{- end }}
-        {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
-        - name: clients-config
-          mountPath: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.clients.fromSecret.key | default "clients.yaml") }}
-          subPath: {{ .Values.config.clients.fromSecret.key | default "clients.yaml" }}
-          readOnly: true
-        {{- end }}
-        {{- if or .Values.config.schemas.files .Values.config.schemas.fromSecret.name }}
+        {{- if .Files.Glob "config/schemas/*.json" }}
         - name: schemas-config
           mountPath: {{ printf "%s/schemas" .Values.config.mountPath }}
           readOnly: true
@@ -240,35 +220,15 @@ spec:
       tolerations: {{- toYaml .Values.api.tolerations | nindent 6 }}
       {{- end }}
       volumes:
-      {{- if or .Values.config.services.content .Values.config.services.fromSecret.name }}
+      {{- if .Files.Get "config/services.yaml" }}
       - name: services-config
-        {{- if and .Values.config.services.content (not .Values.config.services.fromSecret.name) }}
         configMap:
-          name: {{ if and .Values.config.services.fromSecret.name (ne .Values.config.services.fromSecret.name "") }}{{ .Values.config.services.fromSecret.name }}{{ else }}{{ printf "%s-%s" (include "helper.fullname" .) "services-config" }}{{ end }}
-        {{- else }}
-        secret:
-          secretName: {{ .Values.config.services.fromSecret.name }}
-        {{- end }}
+          name: {{ printf "%s-%s" (include "helper.fullname" .) "services-config" }}
       {{- end }}
-      {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
-      - name: clients-config
-        {{- if and .Values.config.clients.content (not .Values.config.clients.fromSecret.name) }}
-        configMap:
-          name: {{ if and .Values.config.clients.fromSecret.name (ne .Values.config.clients.fromSecret.name "") }}{{ .Values.config.clients.fromSecret.name }}{{ else }}{{ printf "%s-%s" (include "helper.fullname" .) "clients-config" }}{{ end }}
-        {{- else }}
-        secret:
-          secretName: {{ .Values.config.clients.fromSecret.name }}
-        {{- end }}
-      {{- end }}
-      {{- if or .Values.config.schemas.files .Values.config.schemas.fromSecret.name }}
+      {{- if .Files.Glob "config/schemas/*.json" }}
       - name: schemas-config
-        {{- if and .Values.config.schemas.files (not .Values.config.schemas.fromSecret.name) }}
         configMap:
-          name: {{ if and .Values.config.schemas.fromSecret.name (ne .Values.config.schemas.fromSecret.name "") }}{{ .Values.config.schemas.fromSecret.name }}{{ else }}{{ printf "%s-%s" (include "helper.fullname" .) "schemas-config" }}{{ end }}
-        {{- else }}
-        secret:
-          secretName: {{ .Values.config.schemas.fromSecret.name }}
-        {{- end }}
+          name: {{ printf "%s-%s" (include "helper.fullname" .) "schemas-config" }}
       {{- end }}
       {{- if .Values.api.volumes }}
       {{- toYaml .Values.api.volumes | nindent 6 }}

@@ -1,13 +1,1 @@
-{{- if and .Values.config.clients.content (not .Values.config.clients.fromSecret.name) -}}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ if and .Values.config.clients.fromSecret.name (ne .Values.config.clients.fromSecret.name "") }}{{ .Values.config.clients.fromSecret.name }}{{ else }}{{ printf "%s-%s" (include "helper.fullname" .) "clients-config" }}{{ end }}
-  labels:
-    {{- include "helper.labels" (dict "root" . "componentName" "config") | nindent 4 }}
-    app.kubernetes.io/component: configuration
-    async-api.io/config-type: clients
-data:
-  {{ .Values.config.clients.fromSecret.key | default "clients.yaml" }}: |
-{{ .Values.config.clients.content | toYaml | indent 4 }}
-{{- end -}}
+{{/* Clients are managed in the database, not via configmap. */}}
