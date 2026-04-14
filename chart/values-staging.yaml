@@ -19,7 +19,7 @@ api:
     # -- Tag to use for the app.
     # @section -- Api
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "v0.3.1"
+    tag: "v0.3.6"
 
   ingress:
     # -- Whether or not ingress should be enabled.
@@ -126,7 +126,7 @@ workers:
         repository: "harbor.sdid.cpin.numerique-interieur.com/asyncapi/async-api-consumer"
         # -- Image tag
         # @section -- Workers
-        tag: "v0.3.1"
+        tag: "v0.3.6"
         # -- Image pull policy
         # @section -- Workers
         pullPolicy: IfNotPresent
