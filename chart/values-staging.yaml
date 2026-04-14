@@ -452,14 +452,24 @@ workers:
           value: "generation_render_queue_in"
         - name: OUT_QUEUE_NAME
           value: "generation_render_queue_out"
+        - name: WORKER_CONCURRENCY
+          value: "3"
+        - name: HEALTH_CHECK_HOST
+          value: "0.0.0.0"
+        - name: HEALTH_CHECK_PORT
+          value: "8083"
         - name: LOG_LEVEL
           value: "INFO"
-        - name: CONSUMER_ENABLE_HEALTH_CHECK_SERVER
-          value: "true"
-        - name: CONSUMER_HEALTH_CHECK_PORT
-          value: "8083"
-        - name: CONSUMER_HEALTH_CHECK_HOST
-          value: "0.0.0.0"
+        - name: S3_ENDPOINT_URL
+          value: "https://brio-staging-api-data.s3.fr-par.scw.cloud"
+        - name: S3_REGION_NAME
+          value: "fr-par"
+        - name: S3_BUCKET_NAME
+          value: "brio-staging-api-data"
+
+      envFromSecret:
+        - secretRef:
+            name: async-api-s3
 
       # -- Container security context
       # @section -- Workers
