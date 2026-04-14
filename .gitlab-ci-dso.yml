@@ -55,8 +55,8 @@ stages:
 
 read_secret:
   stage: read-secret
-  # only:
-  #   - tags
+  only:
+    - tags
   extends:
     - .vault:read_secret
 
@@ -88,12 +88,12 @@ docker-build:consumer:
 docker-build:generation-render:
   stage: docker-build
   needs: ["read_secret"]
-  # only:
-  #   - tags
+  only:
+    - tags
   variables:
     WORKING_DIR: ./workers/python/generation-render
     DOCKERFILE_NAME: Dockerfile
     IMAGE_NAME: generation-render-worker
-    TAG: "${CI_COMMIT_SHORT_SHA}"
+    TAG: "${CI_COMMIT_TAG}"
   extends:
     - .buildkit:build-push
