@@ -1,0 +1,11 @@
+[project]
+name = "generation-render-worker"
+version = "0.1.0"
+description = "Worker de remplissage de templates ODT pour async-api"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "loguru>=0.7.3",
+    "mic-worker==0.1.2",
+    "pydantic-settings>=2.0",
+]

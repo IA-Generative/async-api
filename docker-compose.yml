@@ -65,6 +65,30 @@ services:
     env_file:
       -  .env.example
 
+  generation-render-worker:
+    container_name: generation-render-worker
+    build:
+      context: ./workers/python/generation-render
+      dockerfile: Dockerfile
+    volumes:
+      - ${PWD}/workers/python/generation-render/worker.py:/app/worker.py
+    ports:
+      - "8083:8083"
+    depends_on:
+      - broker
+    environment:
+      BROKER_URL: "amqp://kalo:kalo@broker:5672"
+      IN_QUEUE_NAME: "generation_render_queue_in"
+      OUT_QUEUE_NAME: "generation_render_queue_out"
+      WORKER_CONCURRENCY: "3"
+      HEALTH_CHECK_HOST: "0.0.0.0"
+      HEALTH_CHECK_PORT: "8083"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket,sys; s=socket.socket(); s.settimeout(5); sys.exit(0 if s.connect_ex(('127.0.0.1',8083))==0 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   db:
     image: postgres:17
     volumes:
