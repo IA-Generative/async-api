@@ -42,8 +42,8 @@ docker-build:consumer:
     - tags
   variables:
     WORKING_DIR: ./workers/js
-    DOCKERFILE: Dockerfile
-    IMAGE_NAMES: async-api-consumer
+    DOCKERFILE_NAME: Dockerfile
+    IMAGE_NAME: async-api-consumer
     TAG: "${CI_COMMIT_TAG}"
   extends:
     - .buildkit:build-push
@@ -55,8 +55,8 @@ docker-build:generation-render:
   #   - tags
   variables:
     WORKING_DIR: ./workers/python/generation-render
-    DOCKERFILE: Dockerfile
-    IMAGE_NAMES: generation-render-worker
+    DOCKERFILE_NAME: Dockerfile
+    IMAGE_NAME: generation-render-worker
     TAG: "${CI_COMMIT_TAG}"
   extends:
     - .buildkit:build-push
