@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
-COPY pyproject.toml .
+COPY pyproject.toml uv.lock ./
 RUN uv sync
 COPY worker.py .
 ENV PATH="/app/.venv/bin:$PATH"
