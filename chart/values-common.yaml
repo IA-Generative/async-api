@@ -13,84 +13,11 @@ config:
   urlExistingSecret: "async-api-db-config"
   # -- This secret must contain both DATABASE_URL and BROKER_URL keys
 
-  # -- Services configuration file content or existing secret reference
+  # -- Services configuration: read from config/services.yaml (source of truth)
+  # -- Schemas configuration: read from config/schemas/*.json (auto-discovered)
+  # -- Clients configuration: managed in database, not via configmap
+  # -- The CI copies config/ into chart/config/ before helm upgrade.
   # @section -- Config
-  services:
-    # -- Services configuration content (YAML format)
-    # -- If provided, will create a ConfigMap with this content
-    content:
-      - name: example
-        quotas: 1000
-        json_schema: ./config/schemas/example.json
-        in_queue: example_queue_in
-        out_queue: example_queue_out
-      - name: example2
-        # json_schema: ./schemas/example.json # Default: No schema
-        # quotas: 1000                        # Default: No quotas
-        in_queue: example_queue_in          # Default: <svc>_queue_in
-        out_queue: example_queue_out        # Default: <svc>_queue_out
-
-    # -- Use existing secret for services configuration (optional)
-    fromSecret: {}
-      # -- Name of existing secret containing services.yaml
-      # name: ""
-      # -- Key in the secret containing the services configuration
-      # key: "services.yaml"
-
-  # -- Clients configuration file content or existing secret reference
-  # @section -- Config
-  clients:
-    # -- Clients configuration content (YAML format)
-    # -- If provided, will create a ConfigMap with this content
-    content:
-      - client_id: client1
-        #client_secret: $CLIENT_SECRET_1
-        authorizations:
-          # - service: all # all access
-          #   quotas: 100  # Quotas for each services
-          - service: example
-            quotas: 100
-          - service: example2
-            # quotas: 100 # Default: No quotas
-
-    # -- Use existing secret for clients configuration (optional)
-    fromSecret: {}
-      # -- Name of existing secret containing clients.yaml
-      # name: ""
-      # -- Key in the secret containing the clients configuration
-      # key: "clients.yaml"
-
-  # -- JSON Schema files configuration
-  # @section -- Config
-  schemas:
-    # -- List of JSON schema files to mount
-    # -- Each entry will create a file in /app/config/schemas/
-    files:
-      - name: "example.json"
-        content: |
-          {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "type": "object",
-            "properties": {
-              "sleep": {
-                "type": "integer",
-                "description": "Durée d'attente en secondes"
-              },
-              "mustSucceed": {
-                "type": "boolean",
-                "description": "Indique si la tâche doit réussir"
-              }
-            },
-            "required": ["sleep"],
-            "additionalProperties": false
-          }
-
-    # -- Alternative: Use existing secret for schemas
-    fromSecret: {}
-      # -- Name of existing secret containing schema files
-      # name: ""
-      # -- List of keys in the secret (each key will be mounted as a file)
-      # keys: []
 
   # -- Mount path for configuration files in containers
   # @section -- Config

@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     )
     PROJECT_NAME: str = "Task API"
     PROJECT_DESCRIPTION: str = "API for managing tasks"
-    SERVICES_CONFIG_FILE: str = "./config/services.yaml"
-    CLIENTS_CONFIG_FILE: str = "./config/clients.yaml"
+    SERVICES_CONFIG_FILE: str = "./chart/config/services.yaml"
+    CLIENTS_CONFIG_FILE: str = "./chart/config/clients.yaml"
 
     DB_HOST: str | None = None
     DB_PORT: int | None = None

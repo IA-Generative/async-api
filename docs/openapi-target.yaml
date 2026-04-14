@@ -639,8 +639,8 @@ paths:
       tags: [Clients Admin]
       summary: Importer les clients depuis le YAML
       description: |
-        Charge les clients definis dans `config/clients.yaml` et les insere en base.
-        Seuls les clients absents sont crees ; les existants sont ignores.
+        Les clients sont geres directement en base de donnees via les routes CRUD /clients.
+        Cette route est obsolete.
       operationId: seedClients
       security:
         - basicAuth: []
