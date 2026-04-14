@@ -18,11 +18,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY --chown=appuser:appuser    pyproject.toml  uv.lock ./
 
 RUN uv sync
-
-COPY --chown=appuser:appuser worker.py  .
-
+COPY main.py ./
+COPY src/ ./src/
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8083
-
-CMD ["python", "worker.py"]
+CMD ["python", "main.py"]

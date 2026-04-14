@@ -73,11 +73,13 @@ services:
       context: ./workers/python/generation-render
       dockerfile: Dockerfile
     volumes:
-      - ${PWD}/workers/python/generation-render/worker.py:/app/worker.py
+      - ${PWD}/workers/python/generation-render/main.py:/app/main.py
+      - ${PWD}/workers/python/generation-render/src:/app/src
     ports:
       - "8083:8083"
     depends_on:
       - broker
+      - minio
     environment:
       BROKER_URL: "amqp://kalo:kalo@broker:5672"
       IN_QUEUE_NAME: "generation_render_queue_in"
@@ -85,6 +87,11 @@ services:
       WORKER_CONCURRENCY: "3"
       HEALTH_CHECK_HOST: "0.0.0.0"
       HEALTH_CHECK_PORT: "8083"
+      S3_ENDPOINT_URL: "http://minio:9000"
+      S3_ACCESS_KEY: "minioadmin"
+      S3_SECRET_KEY: "minioadmin"
+      S3_REGION_NAME: "fr-par"
+      S3_BUCKET_NAME: "brio-dev-api-data"
     healthcheck:
       test: ["CMD", "python", "-c", "import socket,sys; s=socket.socket(); s.settimeout(5); sys.exit(0 if s.connect_ex(('127.0.0.1',8083))==0 else 1)"]
       interval: 30s
