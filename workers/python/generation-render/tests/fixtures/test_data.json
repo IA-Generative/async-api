@@ -1,0 +1,6 @@
+{
+  "nom": "Dupont",
+  "ville": "Nice",
+  "is_admin": true,
+  "items": ["dossier-001", "dossier-002", "dossier-003"]
+}
