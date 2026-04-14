@@ -18,8 +18,8 @@ stages:
 
 read_secret:
   stage: read-secret
-  only:
-    - tags
+  # only:
+  #   - tags
   extends:
     - .vault:read_secret
 
@@ -51,8 +51,8 @@ docker-build:consumer:
 docker-build:generation-render:
   stage: docker-build
   needs: ["read_secret"]
-  only:
-    - tags
+  # only:
+  #   - tags
   variables:
     WORKING_DIR: ./workers/python/generation-render
     DOCKERFILE: Dockerfile
