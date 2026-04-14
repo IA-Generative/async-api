@@ -194,7 +194,7 @@ api:
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
-    enabled: true
+    enabled: false
     # -- Defines which ingress controller will implement the resource.
     # @section -- Api
     className: ""
@@ -1220,9 +1220,9 @@ workers:
 
   # -- Example job worker with event-driven scaling
   # @section -- Workers
-  - # -- Worker name
+    # -- Worker name
     # @section -- Workers
-    name: job-worker
+  - name: job-worker
     # -- Worker type
     # @section -- Workers
     type: job
@@ -1396,7 +1396,7 @@ workers:
     # -- KEDA configuration for job scaling
     # @section -- Workers
     kedaAutoscaler:
-      enabled: true
+      enabled: false
       minReplicaCount: 0
       maxReplicaCount: 5
       idleReplicaCount: 0
@@ -1462,3 +1462,234 @@ workers:
     # @section -- Workers
     extraConfigMap: []
 
+# RabbitMQ configuration
+# @section -- RabbitMQ
+rabbitmq:
+  # -- Enable RabbitMQ subchart
+  enabled: true
+  fullnameOverride: async-api-rabbitmq
+  ## @section RabbitMQ Authentication
+  auth:
+    ## @param auth.enabled Enable RabbitMQ authentication
+    enabled: true
+    ## @param auth.username RabbitMQ default username
+    username: asynctask
+    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
+    existingSecret: "async-api-rabbitmq-credentials"
+    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
+    existingPasswordKey: "password"
+    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
+    existingErlangCookieKey: "erlang-cookie"
+  # -- RabbitMQ persistence configuration
+  persistence:
+    # -- Enable RabbitMQ persistence using PVC
+    enabled: true
+    # -- RabbitMQ persistence size
+    size: 8Gi
+  # -- RabbitMQ resources
+  resources:
+    # -- RabbitMQ resource limits
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    # -- RabbitMQ resource requests
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  # -- RabbitMQ init container resources
+  initContainer:
+    # -- RabbitMQ init container resources
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  # -- RabbitMQ service configuration
+  metrics:
+    # -- Enable RabbitMQ metrics
+    enabled: false
+    # -- RabbitMQ metrics service monitor
+    serviceMonitor:
+      # -- Enable RabbitMQ metrics service monitor
+      enabled: false
+
+# PostgreSQL CNPG configuration
+# @section -- PostgreSQL
+cnpg:
+  # -- Enable PostgreSQL subchart
+  enabled: true
+  fullnameOverride: async-api-pg-cluster
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
+  dbName: asynctask
+  credentials:
+    # -- PostgreSQL username for application
+    username: asynctask
+    # -- Use existing secret for PostgreSQL passwords
+    existingSecrets:
+      enabled: true
+      app:
+        secretName: async-api-db-appuser
+      postgres:
+        secretName: async-api-db-superuser
+  # -- PostgreSQL architecture
+  mode: primary
+  # -- PostgreSQL instances
+  instances: 1
+  # -- Enable superuser access
+  enableSuperuserAccess: true
+  # -- PVC size
+  pvcSize:
+    # -- PVC size for data
+    data: 8Gi
+    # -- PVC size for WAL
+    wal: 2Gi
+  # -- PostgreSQL resources
+  resources:
+    # -- PostgreSQL resource limits
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  monitoring:
+    enabled: true
+  backup:
+    enabled: false
+
+pgadmin:
+  enabled: false
+  ingress:
+    enabled: false
+    ingressClassName: nginx
+  fullnameOverride: pgadmin
+  startupProbe:
+    initialDelaySeconds: 60
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  init:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  test:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
+  image:
+    repository: bnoleau/pgadmin-rootless
+    tag: 8.12
+  containerPorts:
+    http: 5050
+  service:
+    targetPort: 5050
+  env:
+    email: theodo@interieur.gouv.fr
+    variables:
+      - name: PGADMIN_DISABLE_POSTFIX
+        value: "1"
+      - name: PGADMIN_LISTEN_PORT
+        value: "5050"
+  existingSecret: async-api-pgadmin
+
+
+# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
+# Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
+vaultSecrets:
+  enabled: false
+  items: []
+    # - destination:
+    #     name: secretName
+    #     type: kubernetes.io/basic-auth
+    #   mount: kv2 mount name
+    #   vaultPath: pathInKv2
+    #   type: kv-v2
+
+# -- Add extra specs dynamically to this chart.
+# @section -- General
+extraObjects: []
+# - apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: my-configmap
+#   data:
+#     key: {{ .Values.fullname }}
+# - |
+#   apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: my-secret
+#   type: Opaque
+#   data:
+#     password: {{ "secretpassword" | b64enc | quote }}
+# - apiVersion: secrets.hashicorp.com/v1beta1
+#   kind: VaultStaticSecret
+#   metadata:
+#     name: foo
+#     labels:
+#       foo/bar: "baz"
+#     annotations:
+#       foo/bar: "baz"
+#   spec:
+#     mount: "my-kv"
+#     vaultAuthRef: "my-vault-auth"
+#     path: "dev/foo"
+#     version: 21
+#     type: "kv-v2"
+#     refreshAfter: "30s"
+#     hmacSecretData: true
+#     rolloutRestartTargets:
+#     - kind: Deployment
+#       name: api
+#     destination:
+#       create: true
+#       overwrite: true
+#       labels:
+#         foo/bar: "baz"
+#       annotations:
+#         foo/bar: "baz"
+#       name: foo
+#       type: "Opaque"
+## Ref: https://artifacthub.io/packages/helm/bitnami/keycloak
+# keycloak:
+#   enabled: false
+#   nameOverride: "keycloak"
+#   auth:
+#     adminUser: ""
+#     adminPassword: ""
+#   ingress:
+#     enabled: true
+#     ingressClassName: ""
+#     annotations: {}
+#     hostname: "keycloak.domain.local"
+#     path: "/"
+#     tls: false
+#     secrets: []
+#   production: true
+#   proxy: "edge"
+#   tls:
+#     enabled: false
+#     autoGenerated: false
+#   postgresql:
+#     nameOverride: "keycloak-db"
+#     enabled: true
+#     auth:
+#       postgresPassword: ""
+#       username: ""
+#       password: ""
+#       database: "keycloak"
+#       architecture: "standalone"

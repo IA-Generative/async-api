@@ -22,8 +22,8 @@ spec:
     metadata:
       {{- if or .Values.api.podAnnotations .Values.api.secrets .Values.api.env }}
       annotations:
-        {{- include "helper.checksum" (list $ "/api/configmap.yaml") | nindent 8 }}
-        {{- include "helper.checksum" (list $ "/api/secret.yaml") | nindent 8 }}
+        {{- include "helper.checksum" (list $ "/api/config/services-configmap.yaml") | nindent 8 }}
+        {{- include "helper.checksum" (list $ "/api/config/clients-configmap.yaml") | nindent 8 }}
         {{- if .Values.api.podAnnotations }}
         {{- toYaml .Values.api.podAnnotations | nindent 8 }}
         {{- end }}
@@ -91,6 +91,18 @@ spec:
         {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
         - name: CLIENTS_CONFIG_FILE
           value: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.clients.fromSecret.key | default "clients.yaml") | quote }}
+        {{- end }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.api.containerPort }}
+          protocol: TCP
+        {{- if .Values.api.metrics.enabled }}
+        - name: metrics
+          containerPort: {{ .Values.api.metrics.service.targetPort }}
+          protocol: TCP
+        {{- end }}
+        {{- if .Values.api.extraPorts }}
+        {{- toYaml .Values.api.extraPorts | nindent 8 }}
         {{- end }}
         {{- if .Values.api.probes.startupProbe }}
         startupProbe:
@@ -170,6 +182,13 @@ spec:
         {{- if or .Values.config.clients.content .Values.config.clients.fromSecret.name }}
         - name: CLIENTS_CONFIG_FILE
           value: {{ printf "%s/%s" .Values.config.mountPath (.Values.config.clients.fromSecret.key | default "clients.yaml") | quote }}
+        {{- end }}
+        ports:
+        - name: health
+          containerPort: {{ .Values.api.listener.service.targetPort | default 8081 }}
+          protocol: TCP
+        {{- if .Values.api.listener.service.extraPorts }}
+        {{- toYaml .Values.api.listener.service.extraPorts | nindent 8 }}
         {{- end }}
         {{- if .Values.api.listener.probes.startupProbe }}
         startupProbe:

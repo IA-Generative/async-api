@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from api.models.client import ClientServiceAuthorization
 from api.models.task import Task
-from api.repositories.client_config_repository import ClientAuthorization
 from api.schemas.enum import TaskStatus
 from api.schemas.errors import BodyValidationError, Forbidden, ServiceNotFound, TooManyClientsRequests, TooManyRequests
 from api.schemas.service import ServiceInfo
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 def task_service() -> TaskService:
     task_repository_mock: TaskRepository = Mock()
     service_service_mock: ServiceService = Mock()
-    client_service_mock: ClientService = Mock()
+    client_service_mock: ClientService = AsyncMock()
     queue_sender_mock: QueueSender = Mock()
 
     # ----------
@@ -63,11 +63,11 @@ def task_service() -> TaskService:
 
     # ----------
     # CLIENT-SERVICE
-    def get_client_authorization_for_service(client_id: str, service: str) -> ClientAuthorization | None:
+    def get_client_authorization_for_service(client_id: str, service: str) -> ClientServiceAuthorization | None:
         if client_id == "client_with_auth_and_no_quota":
-            return ClientAuthorization(service=service, quotas=None)
+            return ClientServiceAuthorization(service=service, quotas=None)
         if client_id == "client_with_auth_and_quota_10":
-            return ClientAuthorization(service=service, quotas=10)
+            return ClientServiceAuthorization(service=service, quotas=10)
         return None
 
     client_service_mock.get_client_authorization_for_service.side_effect = get_client_authorization_for_service

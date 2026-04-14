@@ -4,8 +4,8 @@
 @host = {{scheme}}://{{hostname}}:{{port}}
 
 @service_name = example
-@client_id = client1
-@client_secret =
+@client_id = prisme
+@client_secret = 2026
 @amqp_url = amqp://kalo:kalo@broker:5672/
 
 ###

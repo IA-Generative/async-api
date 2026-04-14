@@ -38,6 +38,31 @@ jobs:
     with:
       PYTHON_VERSION: ${{ needs.expose-vars.outputs.PYTHON_VERSION }}
 
+  helm-template:
+    name: Helm Template
+    runs-on: ubuntu-24.04
+    if: ${{ !github.event.pull_request.draft }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Set up Helm
+      uses: azure/setup-helm@v4
+    - name: Add Helm repositories
+      run: |
+        helm repo add this-is-tobi https://this-is-tobi.github.io/helm-charts
+        helm repo add runix https://helm.runix.net/
+        helm repo update
+    - name: Helm dependency build
+      run: helm dependency build chart/
+    - name: Helm lint (staging)
+      run: helm lint chart/ --values chart/values-common.yaml --values chart/values-staging.yaml
+    - name: Helm template (staging)
+      run: helm template chart/ --values chart/values-common.yaml --values chart/values-staging.yaml
+    - name: Helm lint (prod)
+      run: helm lint chart/ --values chart/values-common.yaml --values chart/values-prod.yaml
+    - name: Helm template (prod)
+      run: helm template chart/ --values chart/values-common.yaml --values chart/values-prod.yaml
+
   # Workaround for required status check in protection branches (see. https://github.com/orgs/community/discussions/13690)
   all-jobs-passed:
     name: Check jobs status
@@ -47,6 +72,7 @@ jobs:
     - expose-vars
     - lint
     - unit-tests
+    - helm-template
     steps:
     - name: Check status of all required jobs
       run: |-

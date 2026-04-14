@@ -20,6 +20,7 @@ from api.schemas.enum import TaskStatus
 from api.schemas.errors import BodyValidationError, Forbidden, ServiceNotFound, TooManyClientsRequests, TooManyRequests
 from api.services import QueueSender, ServiceService
 from api.services.client_service import ClientService
+from api.services.metrics_service import MetricsService
 
 if TYPE_CHECKING:
     from api.models import Task
@@ -64,7 +65,7 @@ class TaskService:
             raise ServiceNotFound
 
         # Check client authorization on service
-        client_authorization = self.client_service.get_client_authorization_for_service(
+        client_authorization = await self.client_service.get_client_authorization_for_service(
             client_id=client_id,
             service=service,
         )
@@ -117,7 +118,7 @@ class TaskService:
             raise ServiceNotFound
 
         # Check client authorization on service
-        client_authorization = self.client_service.get_client_authorization_for_service(
+        client_authorization = await self.client_service.get_client_authorization_for_service(
             client_id=client_id,
             service=service,
         )
@@ -164,4 +165,7 @@ class TaskService:
         )
         task_data = await self.task_repository.create_task_record(task_data_create=task_obj)
         task_position = await self.task_repository.get_task_position_by_id(task_id=task_id, service=service)
+
+        MetricsService.increment_tasks_submitted(service=service, client_id=client_id)
+
         return TaskDataPending(task_id=task_id, task_position=task_position, submission_date=task_data.submition_date)

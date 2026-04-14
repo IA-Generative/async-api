@@ -122,3 +122,21 @@ class BodyValidationError(AppException):
     status_code = 400
     number = 400001
     description = "Body validation error"
+
+
+class ClientAlreadyExists(AppException):
+    status_code = 409
+    number = 409001
+    description = "Client already exists"
+
+
+class ClientNotFound(AppException):
+    status_code = 404
+    number = 404003
+    description = "Client not found"
+
+
+class StorageUploadError(AppException):
+    status_code = 500
+    number = 500002
+    description = "File upload failed"

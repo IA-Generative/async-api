@@ -5,5 +5,11 @@ dependencies:
 - name: rabbitmq
   repository: oci://registry-1.docker.io/cloudpirates
   version: 0.18.0
-digest: sha256:f5c690d0c5413f1f9e849d5064515acd58395cf39d18476d3f218f24c1f0e807
-generated: "2026-03-11T10:25:36.64091172+01:00"
+- name: cnpg-cluster
+  repository: https://this-is-tobi.github.io/helm-charts
+  version: 1.5.4
+- name: pgadmin4
+  repository: https://helm.runix.net/
+  version: 1.59.0
+digest: sha256:12410efec7f83df14e53d54c0d358d115f7f74d13f5aa20b98557438b2a80e8c
+generated: "2026-03-12T17:04:58.800305213+01:00"

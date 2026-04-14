@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None = None
     BROKER_URL: str | None = None
 
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin"  # noqa: S105
+
     API_SENDER_RETRY: int = 3  # 0, 1:1s, 2:4s, 3:9s, ...
     API_LOG_LEVEL: str = "INFO"
     LISTENER_LOG_LEVEL: str = "INFO"
@@ -36,6 +39,13 @@ class Settings(BaseSettings):
     LISTENER_NOTIFIER_RETRY: int = 3  # 0, 1:1s, 2:4s, 3:9s, ...
     LISTENER_HEALTH_CHECK_HOST: str = "0.0.0.0"  # noqa: S104
     LISTENER_HEALTH_CHECK_PORT: int = 8081
+
+    # S3 Configuration
+    S3_ACCESS_KEY: str | None = None
+    S3_SECRET_KEY: str | None = None
+    S3_ENDPOINT_URL: str | None = None
+    S3_REGION_NAME: str = "fr-par"
+    S3_BUCKET_NAME: str | None = None
 
     @property
     def database_url_from_components(self) -> sqlalchemy.URL:

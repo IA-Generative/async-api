@@ -6,16 +6,25 @@ api:
   # -- The number of application controller pods to run.
   # @section -- Api
   replicaCount: 1
+  envFrom:
+    - secretRef:
+        name: async-api-s3
+    - secretRef:
+        name: async-api-admin-credentials
+  env:
+    S3_ENDPOINT_URL: "https://brio-staging-api-data.s3.fr-par.scw.cloud"
+    S3_REGION_NAME: "fr-par"
+    S3_BUCKET_NAME: "brio-staging-api-data"
   image:
     # -- Tag to use for the app.
     # @section -- Api
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "v0.3.1"
+    tag: "v0.3.6"
 
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
-    enabled: false
+    enabled: true
     # -- Defines which ingress controller will implement the resource.
     # @section -- Api
     className: "nginx"
@@ -35,7 +44,7 @@ api:
           portNumber: null
         # -- Name of the host record.
         # @section -- Api
-        name: "domain.local"
+        name: "async-api-staging.sdid-app-hp.cpin.numerique-interieur.com"
         # -- Path type of the host record.
         # @section -- Api
         pathType: "Prefix"
@@ -51,8 +60,25 @@ api:
   # -- Image credentials configuration.
   # @section -- Api
   imagePullSecrets:
-  - name: "registry-pull-secret"
-    create: false
+    - name: "registry-pull-secret"
+      create: false
+  metrics:
+    enabled: true
+    service:
+      type: ClusterIP
+      port: 8080           # int — Service.spec.ports[].port requires int32
+      targetPort: 8080     # int — Service.spec.ports[].targetPort
+      portName: metrics    # string — used as the port name, referenced by ServiceMonitor
+      labels: {}
+      annotations: {}
+    serviceMonitor:
+      enabled: true
+      labels: {}
+      annotations: {}
+      endpoints:
+        - path: /internal/metrics
+          honorLabels: false
+          interval: 30s
 
   resources:
     requests:
@@ -73,73 +99,6 @@ api:
       cpu: "500m"
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
-
-# PostgreSQL CNPG configuration
-# @section -- PostgreSQL
-cnpg:
-  # -- Enable PostgreSQL subchart
-  enabled: true
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
-  pvcSize:
-    # -- PVC size for data
-    data: 8Gi
-    # -- PVC size for WAL
-    wal: 2Gi
-  # -- PostgreSQL resources
-  resources:
-    # -- PostgreSQL resource limits
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 100m
-      memory: 256Mi
-  monitoring:
-    enabled: true
-  backup:
-    enabled: false
-
-# RabbitMQ configuration
-# @section -- RabbitMQ
-rabbitmq:
-  # -- Enable RabbitMQ subchart
-  enabled: true
-  ## @section RabbitMQ Authentication
-  auth:
-    ## @param auth.enabled Enable RabbitMQ authentication
-    enabled: true
-    ## @param auth.username RabbitMQ default username
-    username: asynctask
-    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
-    existingSecret: "async-api-rabbitmq-credentials"
-    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
-    existingPasswordKey: "password"
-    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
-    existingErlangCookieKey: "erlang-cookie"
-  # -- RabbitMQ persistence configuration
-  persistence:
-    # -- Enable RabbitMQ persistence using PVC
-    enabled: true
-    # -- RabbitMQ persistence size
-    size: 8Gi
-  # -- RabbitMQ resources
-  resources:
-    # -- RabbitMQ resource limits
-    limits:
-      cpu: 1
-      memory: 2Gi
-    # -- RabbitMQ resource requests
-    requests:
-      cpu: 100m
-      memory: 1Gi
-  # -- RabbitMQ service configuration
-  metrics:
-    # -- Enable RabbitMQ metrics
-    enabled: false
-    # -- RabbitMQ metrics service monitor
-    serviceMonitor:
-      # -- Enable RabbitMQ metrics service monitor
-      enabled: false
 
 # Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 # Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
@@ -162,8 +121,8 @@ vault:
 workers:
   # -- Example worker demonstrating deployment with KEDA autoscaling
   # @section -- Workers
-    # -- Worker name (used for labeling and naming resources)
-    # @section -- Workers
+  # -- Worker name (used for labeling and naming resources)
+  # @section -- Workers
   - name: consumer
     # -- Worker type: 'deployment' for long-running processes, 'job' for one-time tasks
     # @section -- Workers
@@ -182,7 +141,7 @@ workers:
         repository: "harbor.sdid.cpin.numerique-interieur.com/asyncapi/async-api-consumer"
         # -- Image tag
         # @section -- Workers
-        tag: "v0.3.1"
+        tag: "v0.3.6"
         # -- Image pull policy
         # @section -- Workers
         pullPolicy: IfNotPresent
@@ -282,15 +241,15 @@ workers:
         privileged: false
         capabilities:
           drop:
-          - ALL
+            - ALL
         readOnlyRootFilesystem: true
 
       # -- Pod security context
       # @section -- Workers
       podSecurityContext:
-        fsGroup: 1001
-        runAsUser: 1001
-        runAsGroup: 1001
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
         runAsNonRoot: true
 
     # -- KEDA autoscaler configuration
@@ -298,7 +257,7 @@ workers:
     kedaAutoscaler:
       # -- Enable KEDA autoscaling
       # @section -- Workers
-      enabled: true
+      enabled: false
       # -- Minimum number of replicas
       # @section -- Workers
       minReplicaCount: 1
@@ -324,6 +283,15 @@ workers:
         # -- Target queue length to trigger scaling
         # @section -- Workers
         queueLength: "5"
+        # TriggerAuthentication: KEDA se connecte à RabbitMQ depuis son propre namespace,
+        # il ne peut pas résoudre le short hostname. Le secret référencé doit contenir
+        # l'URL AMQP complète avec FQDN, ex:
+        #   amqp://user:pass@async-api-rabbitmq-headless.NAMESPACE.svc.cluster.local:5672/
+        # Ajouter la clé BROKER_URL_FQDN dans le secret Vault staging/db-config.
+        triggerAuth:
+          enabled: true
+          secretName: "async-api-db-config"
+          secretKey: "BROKER_URL_FQDN"
 
       # -- Advanced scaling behavior configuration
       # @section -- Workers
@@ -333,20 +301,20 @@ workers:
           # @section -- Workers
           stabilizationWindowSeconds: 300
           policies:
-          - type: Percent
-            value: 50
-            periodSeconds: 60
+            - type: Percent
+              value: 50
+              periodSeconds: 60
         scaleUp:
           # -- Stabilization window for scale up
           # @section -- Workers
           stabilizationWindowSeconds: 0
           policies:
-          - type: Percent
-            value: 100
-            periodSeconds: 15
-          - type: Pods
-            value: 4
-            periodSeconds: 15
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+            - type: Pods
+              value: 4
+              periodSeconds: 15
           selectPolicy: Max
 
       # -- Fallback configuration when KEDA fails
@@ -377,10 +345,10 @@ workers:
     metrics:
       # -- Enable metrics endpoint
       # @section -- Workers
-      enabled: false
+      enabled: true
       # -- Metrics endpoint path
       # @section -- Workers
-      path: "/metrics"
+      path: "/internal/metrics"
       # -- ServiceMonitor configuration for Prometheus Operator
       # @section -- Workers
       serviceMonitor:
@@ -397,6 +365,84 @@ workers:
         # @section -- Workers
         annotations: {}
 
+# RabbitMQ configuration
+# @section -- RabbitMQ
+rabbitmq:
+  # -- Enable RabbitMQ subchart
+  enabled: true
+  ## @section RabbitMQ Authentication
+  auth:
+    ## @param auth.enabled Enable RabbitMQ authentication
+    enabled: true
+    ## @param auth.username RabbitMQ default username
+    username: asynctask
+    ## @param auth.existingSecret Name of existing secret containing RabbitMQ credentials
+    existingSecret: "async-api-rabbitmq-credentials"
+    ## @param auth.existingPasswordKey Key in existing secret containing RabbitMQ password
+    existingPasswordKey: "password"
+    ## @param auth.existingErlangCookieKey Key in existing secret containing Erlang cookie
+    existingErlangCookieKey: "erlang-cookie"
+  # -- RabbitMQ persistence configuration
+  persistence:
+    # -- Enable RabbitMQ persistence using PVC
+    enabled: true
+    # -- RabbitMQ persistence size
+    size: 8Gi
+  # -- RabbitMQ resources
+  resources:
+    # -- RabbitMQ resource limits
+    limits:
+      cpu: 1
+      memory: 2Gi
+    # -- RabbitMQ resource requests
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  # -- RabbitMQ service configuration
+  metrics:
+    # -- Enable RabbitMQ metrics
+    enabled: false
+    # -- RabbitMQ metrics service monitor
+    serviceMonitor:
+      # -- Enable RabbitMQ metrics service monitor
+      enabled: false
+
+# PostgreSQL CNPG configuration
+# @section -- PostgreSQL
+cnpg:
+  # -- Enable PostgreSQL subchart
+  enabled: true
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.7
+  pvcSize:
+    # -- PVC size for data
+    data: 8Gi
+    # -- PVC size for WAL
+    wal: 2Gi
+  # -- PostgreSQL resources
+  resources:
+    # -- PostgreSQL resource limits
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  monitoring:
+    enabled: true
+  backup:
+    enabled: false
+
+pgadmin:
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: async-api-pg-admin-staging.sdid-app-hp.cpin.numerique-interieur.com
+        paths:
+          - path: /
+            pathType: Prefix
+
+# Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 vaultSecrets:
   enabled: true
   items:
@@ -423,4 +469,22 @@ vaultSecrets:
         type: kubernetes.io/opaque
       mount: asyncapi
       vaultPath: staging/db-config
+      type: kv-v2
+    - destination:
+        name: async-api-pgadmin
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/pgadmin
+      type: kv-v2
+    - destination:
+        name: async-api-s3
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/s3-credentials
+      type: kv-v2
+    - destination:
+        name: async-api-admin-credentials
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: staging/admin-credentials
       type: kv-v2
