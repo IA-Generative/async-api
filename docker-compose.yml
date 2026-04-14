@@ -5,7 +5,7 @@ services:
     container_name: api
     volumes:
       - ${PWD}/api:/app/api
-      - ${PWD}/config:/app/config
+      - ${PWD}/chart/config:/app/config
       - ${PWD}/migrations:/app/migrations
       - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
     build:
@@ -35,7 +35,7 @@ services:
     volumes:
       - ${PWD}/api:/app/api
       - ${PWD}/listener:/app/listener
-      - ${PWD}/config:/app/config
+      - ${PWD}/chart/config:/app/config
       - ${PWD}/scripts/entrypoint_dev.sh:/app/entrypoint.sh
     build:
       context: .
