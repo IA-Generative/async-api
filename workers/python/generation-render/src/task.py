@@ -1,3 +1,4 @@
+from pathlib import PurePosixPath
 from typing import Any
 
 from loguru import logger
@@ -28,8 +29,14 @@ class GenerationRenderTask(AsyncTaskInterface):
         result = renderer.render(template_content, data)
         await progress(progress=0.7, payload=None)
 
-        # TODO: ticket 5 — upload résultat dans S3 + pre-signed URL
+        output_file_id = self._build_output_file_id(task_id, file_id)
+        self._upload_result(task_id, output_file_id, result.content)
+        download_url = self.s3_client.get_presigned_download_url(output_file_id)
+        await progress(progress=1.0, payload=None)
+
         return {
+            "output_file_id": output_file_id,
+            "download_url": download_url,
             "warnings": result.warnings,
         }
 
@@ -38,3 +45,16 @@ class GenerationRenderTask(AsyncTaskInterface):
         content = self.s3_client.download(file_id)
         logger.info(f"Task {task_id}: template downloaded ({len(content)} bytes)")
         return content
+
+    def _build_output_file_id(self, task_id: str, source_file_id: str) -> str:
+        """Build the S3 key for the rendered file.
+
+        Example: "client1/abc123/facture.odt" → "client1/abc123/<task_id>/rendered_facture.odt"
+        """
+        path = PurePosixPath(source_file_id)
+        return str(path.parent / task_id / f"rendered_{path.name}")
+
+    def _upload_result(self, task_id: str, output_file_id: str, content: bytes) -> None:
+        logger.info(f"Task {task_id}: uploading result to {output_file_id}")
+        self.s3_client.upload(output_file_id, content)
+        logger.info(f"Task {task_id}: result uploaded ({len(content)} bytes)")
