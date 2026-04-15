@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -44,3 +46,20 @@ class S3Client:
         content: bytes = response["Body"].read()
         logger.info(f"Downloaded {file_id} ({len(content)} bytes)")
         return content
+
+    def upload(self, file_id: str, content: bytes) -> None:
+        """Upload file content to S3."""
+        self.client.upload_fileobj(
+            Fileobj=BytesIO(content),
+            Bucket=self.bucket_name,
+            Key=file_id,
+        )
+        logger.info(f"Uploaded {file_id} ({len(content)} bytes)")
+
+    def get_presigned_download_url(self, file_id: str, expires_in: int = 86400) -> str:
+        """Generate a pre-signed URL to download a file (default: 24h)."""
+        return self.client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": self.bucket_name, "Key": file_id},
+            ExpiresIn=expires_in,
+        )

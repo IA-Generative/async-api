@@ -1,49 +1,56 @@
 import re
+import tempfile
 import zipfile
 from io import BytesIO
+from pathlib import Path
 
 from loguru import logger
+from relatorio.templates.opendocument import Template
 
 from src.renderers.base import RenderResult, TemplateRenderer
 
-PLACEHOLDER_PATTERN = re.compile(r"\$\{(\w+)\}")
+PLACEHOLDER_PATTERN = re.compile(r"&lt;(\w+(?:\.\w+)?)&gt;")
+FOR_VARIABLE_PATTERN = re.compile(
+    r'for%20each=(?:&quot;|"|%22)(\w+)(?:%20|\s)in',
+)
+
+
+def _extract_placeholder_keys(odt_content: bytes) -> set[str]:
+    """Extract placeholder names from the ODT content.xml.
+
+    Excludes loop iteration variables (e.g. 'item' in 'for each="item in items"')
+    and dotted access (e.g. 'mesure.department').
+    """
+    with zipfile.ZipFile(BytesIO(odt_content), "r") as z:
+        xml = z.read("content.xml").decode("utf-8")
+    all_keys = set(PLACEHOLDER_PATTERN.findall(xml))
+    loop_vars = set(FOR_VARIABLE_PATTERN.findall(xml))
+    return {k for k in all_keys if k not in loop_vars and "." not in k}
 
 
 class OdtRenderer(TemplateRenderer):
     def render(self, template_content: bytes, data: dict[str, str]) -> RenderResult:
-        warnings: list[str] = []
-        template_zip = BytesIO(template_content)
-        output_zip = BytesIO()
+        expected_keys = _extract_placeholder_keys(template_content)
+        provided_keys = set(data.keys())
+        missing_keys = sorted(expected_keys - provided_keys)
 
-        with zipfile.ZipFile(template_zip, "r") as zin, zipfile.ZipFile(output_zip, "w") as zout:
-            for item in zin.infolist():
-                content = zin.read(item.filename)
+        with tempfile.NamedTemporaryFile(suffix=".odt", delete=False) as tmp:
+            tmp.write(template_content)
+            tmp_path = Path(tmp.name)
 
-                if item.filename == "content.xml":
-                    content = self._replace_placeholders(
-                        content.decode("utf-8"),
-                        data,
-                        warnings,
-                    ).encode("utf-8")
+        try:
+            template = Template(source="", filepath=str(tmp_path), lookup="lenient")
+            output = template.generate(**data).render()
+            rendered_bytes: bytes = output.getvalue()
+        finally:
+            tmp_path.unlink(missing_ok=True)
 
-                zout.writestr(item, content)
+        warnings = [
+            f"La donnée pour '{key}' n'est pas définie"
+            for key in missing_keys
+        ]
 
         if warnings:
-            logger.warning(f"Missing keys: {warnings}")
+            logger.warning(f"Missing keys: {missing_keys}")
 
-        return RenderResult(content=output_zip.getvalue(), warnings=warnings)
-
-    def _replace_placeholders(
-        self,
-        xml_content: str,
-        data: dict[str, str],
-        warnings: list[str],
-    ) -> str:
-        def replace_match(match: re.Match) -> str:
-            key = match.group(1)
-            if key in data:
-                return data[key]
-            warnings.append(f"La donnée pour '{key}' n'est pas définie")
-            return match.group(0)
-
-        return PLACEHOLDER_PATTERN.sub(replace_match, xml_content)
+        return RenderResult(content=rendered_bytes, warnings=warnings)

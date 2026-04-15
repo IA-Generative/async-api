@@ -22,66 +22,85 @@ def _extract_content_xml(odt_bytes: bytes) -> str:
 
 
 class TestOdtRendererHappyPath:
-    def test_all_placeholders_replaced(self) -> None:
+    def test_simple_placeholders_replaced(self) -> None:
         renderer = OdtRenderer()
-        data = _load_data()
 
-        result = renderer.render(_load_template(), data)
+        result = renderer.render(_load_template(), _load_data())
 
         content = _extract_content_xml(result.content)
-        assert "${nom}" not in content
-        assert "${ville}" not in content
         assert "Dupont" in content
         assert "Nice" in content
 
-    def test_no_warnings_for_provided_keys(self) -> None:
+    def test_conditional_block_rendered(self) -> None:
         renderer = OdtRenderer()
-        data = _load_data()
 
-        result = renderer.render(_load_template(), data)
+        result = renderer.render(_load_template(), _load_data())
 
-        assert not any("nom" in w for w in result.warnings)
-        assert not any("ville" in w for w in result.warnings)
+        content = _extract_content_xml(result.content)
+        assert "Vous etes administrateur" in content
+
+    def test_iterative_block_rendered(self) -> None:
+        renderer = OdtRenderer()
+
+        result = renderer.render(_load_template(), _load_data())
+
+        content = _extract_content_xml(result.content)
+        assert "dossier-001" in content
+        assert "dossier-002" in content
+        assert "dossier-003" in content
+
+    def test_no_warnings_when_all_keys_present(self) -> None:
+        renderer = OdtRenderer()
+
+        result = renderer.render(_load_template(), _load_data())
+
+        assert result.warnings == []
 
     def test_output_is_valid_odt(self) -> None:
         renderer = OdtRenderer()
-        data = _load_data()
 
-        result = renderer.render(_load_template(), data)
+        result = renderer.render(_load_template(), _load_data())
 
         with zipfile.ZipFile(BytesIO(result.content), "r") as z:
             assert "content.xml" in z.namelist()
             assert "mimetype" in z.namelist()
+            assert "meta.xml" in z.namelist()
 
 
 class TestOdtRendererMissingKeys:
-    def test_missing_key_leaves_placeholder(self) -> None:
-        renderer = OdtRenderer()
-        partial_data = {"nom": "Dupont"}
+    def test_missing_simple_key_renders_empty(self) -> None:
+        """In lenient mode, Relatorio renders missing keys as empty strings.
 
-        result = renderer.render(_load_template(), partial_data)
+        The warning is the signal that a key was missing, not the document content.
+        """
+        renderer = OdtRenderer()
+
+        result = renderer.render(
+            _load_template(),
+            {"nom": "Dupont", "is_admin": True, "items": []},
+        )
 
         content = _extract_content_xml(result.content)
         assert "Dupont" in content
-        assert "${ville}" in content
+        assert any("ville" in w for w in result.warnings)
 
     def test_missing_key_generates_warning(self) -> None:
         renderer = OdtRenderer()
-        partial_data = {"nom": "Dupont"}
 
-        result = renderer.render(_load_template(), partial_data)
+        result = renderer.render(
+            _load_template(),
+            {"nom": "Dupont", "is_admin": True, "items": []},
+        )
 
         assert any("ville" in w for w in result.warnings)
 
-    def test_empty_data_leaves_all_placeholders(self) -> None:
+    def test_multiple_missing_keys(self) -> None:
         renderer = OdtRenderer()
 
         result = renderer.render(_load_template(), {})
 
-        content = _extract_content_xml(result.content)
-        assert "${nom}" in content
-        assert "${ville}" in content
-        assert len(result.warnings) >= 2
+        assert any("nom" in w for w in result.warnings)
+        assert any("ville" in w for w in result.warnings)
 
 
 class TestOdtRendererEdgeCases:
@@ -91,5 +110,24 @@ class TestOdtRendererEdgeCases:
 
         result = renderer.render(_load_template(), data)
 
-        assert not any("unknown_key" in w for w in result.warnings)
+        assert result.warnings == []
         assert "ignored" not in _extract_content_xml(result.content)
+
+    def test_conditional_empty_hides_block(self) -> None:
+        """Template uses is_admin!='' so empty string hides the block."""
+        renderer = OdtRenderer()
+        data = {**_load_data(), "is_admin": ""}
+
+        result = renderer.render(_load_template(), data)
+
+        content = _extract_content_xml(result.content)
+        assert "Vous etes administrateur" not in content
+
+    def test_empty_list_produces_no_items(self) -> None:
+        renderer = OdtRenderer()
+        data = {**_load_data(), "items": []}
+
+        result = renderer.render(_load_template(), data)
+
+        content = _extract_content_xml(result.content)
+        assert "dossier" not in content

@@ -9,16 +9,20 @@
     },
     "data": {
       "type": "object",
-      "description": "Dictionnaire clé-valeur des placeholders à remplir dans le template. La clé correspond au nom du placeholder, la valeur à la chaîne à insérer.",
+      "description": "Dictionnaire des placeholders à remplir dans le template. Les valeurs peuvent être des chaînes, des booléens, ou des listes (pour les boucles Relatorio).",
       "additionalProperties": {
-        "type": "string"
+        "oneOf": [
+          { "type": "string" },
+          { "type": "boolean" },
+          { "type": "array", "items": {} }
+        ]
       },
       "examples": [
         {
-          "tribunal_judiciaire_competent": "Nice",
-          "courriel_tribunal_judiciaire": "nice@tj.com",
-          "identite_complete_etranger": "Madame SCHLIENGER ANAIS",
-          "date_courrier": "23.03.2026"
+          "nom_prefecture": "Nice",
+          "date_arrete": "23.03.2026",
+          "is_admin": true,
+          "items": ["dossier-001", "dossier-002"]
         }
       ]
     }
