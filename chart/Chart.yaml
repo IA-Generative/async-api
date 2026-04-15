@@ -23,7 +23,7 @@ dependencies:
     version: 1.59.0
     repository: https://helm.runix.net/
   - name: sql-exporter
-    alias: sqlExporter
+    alias: sqlexporter
     version: "0.17.5"
     repository: "https://burningalchemist.github.io/sql_exporter/"
     condition: sqlExporter.enabled
