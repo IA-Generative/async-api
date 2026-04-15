@@ -68,7 +68,7 @@ api:
     service:
       type: ClusterIP
       port: 8080           # int — Service.spec.ports[].port requires int32
-      targetPort: 8080     # int — Service.spec.ports[].targetPort
+      targetPort: 8000     # int — Service.spec.ports[].targetPort
       portName: metrics    # string — used as the port name, referenced by ServiceMonitor
       labels: {}
       annotations: {}
