@@ -45,9 +45,12 @@ def receive_callback(body: TaskCallback) -> None:
     description="""
 Crée une tâche asynchrone pour un service donné.
 
-- **service** : nom du service à appeler (doit être dans la liste autorisée)
-- **body** : paramètres à transmettre au service cible (dépend du service)
-- **callback** : URL à appeler une fois la tâche terminée (optionnel)
+- **service** : nom du service à appeler. La liste des services, leurs schémas
+  d'entrée/sortie et leurs exemples sont documentés dans la section
+  **« Catalogue des services »** de cette documentation.
+- **body** : paramètres à transmettre au service cible (le format dépend du service —
+  voir la section du service concerné).
+- **callback** : URL à appeler une fois la tâche terminée (optionnel).
 """,
 )
 async def create_task(
@@ -55,7 +58,10 @@ async def create_task(
         str,
         Path(
             default=...,
-            description="Nom du service pour lequel créer la tâche. Doit être dans la liste des services autorisés.",
+            description=(
+                "Nom du service pour lequel créer la tâche. "
+                "Voir la section « Catalogue des services » pour la liste et les contrats d'interface."
+            ),
         ),
     ],
     task: Annotated[
@@ -91,7 +97,12 @@ async def create_task(
     description="""
 Permet de récupérer le statut d'une tâche asynchrone via son identifiant.
 
-- **task_id** : identifiant unique de la tâche à interroger
+- **service** : nom du service associé à la tâche. Voir la section
+  **« Catalogue des services »** pour la liste.
+- **task_id** : identifiant unique de la tâche à interroger.
+
+Le champ `result` de la réponse (quand `status: "success"`) dépend du service —
+voir la section du service concerné pour le format exact.
 """,
 )
 async def get_task(
@@ -100,7 +111,8 @@ async def get_task(
         Path(
             default=...,
             description=(
-                "Nom du service pour lequel récupérer la tâche doit être dans la liste des services autorisés."
+                "Nom du service associé à la tâche. "
+                "Voir la section « Catalogue des services » pour la liste."
             ),
         ),
     ],

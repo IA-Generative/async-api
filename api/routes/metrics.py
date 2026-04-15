@@ -6,7 +6,7 @@ from starlette.responses import Response
 
 from api.services.metrics_service import MetricsService
 
-router = APIRouter()
+router = APIRouter(tags=["Metrics"])
 
 
 @router.get(
