@@ -627,7 +627,7 @@ workers:
 
 # SQL Exporter configuration
 # @section -- SQL Exporter
-sqlExporter:
+sqlexporter:
   enabled: true
   
 # RabbitMQ configuration
