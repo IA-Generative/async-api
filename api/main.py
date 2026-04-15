@@ -2,7 +2,9 @@ from enum import StrEnum
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.openapi.docs import get_redoc_html
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import JSONResponse
 
 from api.core.config import settings
 from api.core.exception_handlers import register_exception_handlers
@@ -30,7 +32,7 @@ logger.info("🤗 Done.")
 
 logger.info("⏳ Registering API routes ...")
 
-# Tags OpenAPI : les tags techniques (routes) + un tag par service documenté
+# Tags techniques (routes) — utilisés par Swagger ET ReDoc
 technical_tags = [
     {
         "name": "Tasks",
@@ -55,36 +57,49 @@ technical_tags = [
     {"name": "Usage", "description": "Statistiques d'usage par client."},
 ]
 
+# URL de l'OpenAPI spécifique à ReDoc (enrichi des tags documentaires)
+REDOC_OPENAPI_URL = "/openapi-redoc.json"
+
 app = FastAPI(
     title=__name__,
     version=__version__,
     summary=settings.PROJECT_DESCRIPTION,
-    openapi_tags=technical_tags + build_openapi_tags(),
+    openapi_tags=technical_tags,
+    # ReDoc utilisera son propre schema OpenAPI
+    redoc_url=None,
 )
 
 
-def _add_tag_groups_to_openapi(fastapi_app: FastAPI) -> None:
-    """Ajoute `x-tagGroups` au schema OpenAPI pour regrouper les tags dans ReDoc."""
-    original_openapi = fastapi_app.openapi
-
-    def custom_openapi() -> dict:
-        schema = original_openapi()
-        schema["x-tagGroups"] = [
-            {
-                "name": "API",
-                "tags": [tag["name"] for tag in technical_tags],
-            },
-            {
-                "name": "Services disponibles",
-                "tags": service_tag_names(),
-            },
-        ]
-        return schema
-
-    fastapi_app.openapi = custom_openapi  # type: ignore[method-assign]
+@app.get("/redoc", include_in_schema=False)
+def redoc_html() -> object:
+    """Sert ReDoc en pointant vers l'OpenAPI enrichi."""
+    return get_redoc_html(openapi_url=REDOC_OPENAPI_URL, title=f"{__name__} — Documentation")
 
 
-_add_tag_groups_to_openapi(app)
+@app.get(REDOC_OPENAPI_URL, include_in_schema=False)
+def openapi_redoc() -> JSONResponse:
+    """Schéma OpenAPI enrichi pour ReDoc.
+
+    Ajoute les tags documentaires (catalogue + un tag par service) et les
+    `x-tagGroups` pour regrouper visuellement dans ReDoc. Swagger continue
+    d'utiliser le schéma de base (propre, focus testing).
+    """
+    base_schema = app.openapi()
+    # Copie défensive pour ne pas muter le schema mis en cache par FastAPI
+    schema = dict(base_schema)
+    schema["tags"] = technical_tags + build_openapi_tags()
+    schema["x-tagGroups"] = [
+        {
+            "name": "API",
+            "tags": [tag["name"] for tag in technical_tags],
+        },
+        {
+            "name": "Services disponibles",
+            "tags": service_tag_names(),
+        },
+    ]
+    return JSONResponse(schema)
+
 
 register_exception_handlers(app=app)
 
