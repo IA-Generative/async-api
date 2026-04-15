@@ -648,14 +648,25 @@ rabbitmq:
     requests:
       cpu: 100m
       memory: 1Gi
-  # -- RabbitMQ service configuration
+  # -- RabbitMQ metrics configuration (enables rabbitmq_prometheus plugin on port 15692)
   metrics:
-    # -- Enable RabbitMQ metrics
-    enabled: false
-    # -- RabbitMQ metrics service monitor
+    # -- Enable RabbitMQ metrics (auto-enables rabbitmq_prometheus plugin)
+    enabled: true
+    # -- RabbitMQ metrics port
+    port: 15692
+    # -- RabbitMQ metrics ServiceMonitor (requires Prometheus Operator)
     serviceMonitor:
-      # -- Enable RabbitMQ metrics service monitor
-      enabled: false
+      # -- Create ServiceMonitor for Prometheus scraping
+      enabled: true
+      # -- Scrape interval
+      interval: 30s
+      # -- Scrape timeout
+      scrapeTimeout: 10s
+      # -- Metrics path (use /metrics/detailed or /metrics/per-object for more detail)
+      path: /metrics
+      # -- Extra labels (set e.g. release: kube-prometheus-stack if your Prometheus requires it)
+      labels: {}
+      annotations: {}
 
 # PostgreSQL CNPG configuration
 # @section -- PostgreSQL
