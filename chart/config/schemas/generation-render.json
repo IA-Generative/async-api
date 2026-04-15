@@ -21,7 +21,7 @@
         {
           "nom_prefecture": "Nice",
           "date_arrete": "23.03.2026",
-          "is_admin": "oui",
+          "is_admin": true,
           "items": ["dossier-001", "dossier-002"]
         }
       ]
