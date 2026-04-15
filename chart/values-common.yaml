@@ -1372,7 +1372,7 @@ sqlexporter:
         enable_ping: true
         static_configs:
           - targets:
-              db: 'postgres://${ASYNC_API_DB_USER}:${ASYNC_API_DB_PASS}@async-api-pg-cluster-ro:5432/task?sslmode=disable'
+              db: 'postgres://${ASYNC_API_DB_USER}:${ASYNC_API_DB_PASS}@async-api-pg-cluster-ro:5432/asynctask?sslmode=disable'
             labels:
               app: async-api
 
