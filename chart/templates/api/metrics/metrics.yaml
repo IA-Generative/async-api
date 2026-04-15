@@ -17,5 +17,5 @@ spec:
     targetPort: {{ .Values.api.metrics.service.targetPort }}
     protocol: TCP
     name: {{ .Values.api.metrics.service.portName }}
-  selector: {{- include "helper.selectorLabels" . | nindent 4 }}
+  selector: {{- include "helper.selectorLabels" (dict "root" . "componentName" "api") | nindent 4 }}
 {{- end }}
