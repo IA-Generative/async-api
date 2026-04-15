@@ -8,5 +8,8 @@ dependencies:
 - name: pgadmin4
   repository: https://helm.runix.net/
   version: 1.59.0
-digest: sha256:12410efec7f83df14e53d54c0d358d115f7f74d13f5aa20b98557438b2a80e8c
-generated: "2026-03-12T17:04:58.800305213+01:00"
+- name: sql-exporter
+  repository: https://burningalchemist.github.io/sql_exporter/
+  version: 0.17.5
+digest: sha256:f33a3119848f469cdd6a3824f0d13e06602ffb7e7770b06a3ebb8891118e7404
+generated: "2026-04-15T15:59:31.27620216+02:00"
