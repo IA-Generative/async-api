@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 
+from api.core.logger import logger
 from api.core.security import auth_guard
 from api.schemas.errors import StorageUploadError
 from api.schemas.storage import StorageUploadResponse
@@ -35,5 +36,6 @@ def upload_file(
             file_obj=file.file,
         )
     except Exception as e:
+        logger.exception(f"Upload failed for client_id={client_id} filename={file.filename}")
         raise StorageUploadError(details=str(e)) from e
     return StorageUploadResponse(file_id=file_id)
