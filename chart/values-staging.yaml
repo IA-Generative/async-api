@@ -625,6 +625,11 @@ workers:
         # @section -- Workers
         annotations: {}
 
+# SQL Exporter configuration
+# @section -- SQL Exporter
+sqlExporter:
+  enabled: true
+  
 # RabbitMQ configuration
 # @section -- RabbitMQ
 rabbitmq:
