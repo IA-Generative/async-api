@@ -22,6 +22,11 @@ dependencies:
     alias: pgadmin
     version: 1.59.0
     repository: https://helm.runix.net/
+  - name: sql-exporter
+    alias: sqlExporter
+    version: "0.17.5"
+    repository: "https://burningalchemist.github.io/sql_exporter/"
+    condition: sqlExporter.enabled
 sources:
 - https://github.com/titigmr/async-api
 maintainers:
