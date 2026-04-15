@@ -30,7 +30,8 @@ api:
     className: "nginx"
     # -- Additional ingress annotations.
     # @section -- Api
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "25m"
     # -- Additional ingress labels.
     # @section -- Api
     labels: {}
