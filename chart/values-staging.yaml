@@ -472,6 +472,18 @@ workers:
         - secretRef:
             name: async-api-s3
 
+      # -- Volume mounts for writable /tmp (required by Relatorio for template rendering)
+      # @section -- Workers
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+
+      # -- Volumes (emptyDir for /tmp since readOnlyRootFilesystem is enabled)
+      # @section -- Workers
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
       # -- Container security context
       # @section -- Workers
       securityContext:

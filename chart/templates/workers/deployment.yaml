@@ -101,6 +101,14 @@ spec:
         securityContext:
           {{- toYaml .deploymentSpec.securityContext | nindent 10 }}
         {{- end }}
+        {{- if .deploymentSpec.volumeMounts }}
+        volumeMounts:
+          {{- toYaml .deploymentSpec.volumeMounts | nindent 10 }}
+        {{- end }}
+      {{- if .deploymentSpec.volumes }}
+      volumes:
+        {{- toYaml .deploymentSpec.volumes | nindent 8 }}
+      {{- end }}
       {{- if .deploymentSpec.nodeSelector }}
       nodeSelector:
         {{- toYaml .deploymentSpec.nodeSelector | nindent 8 }}
