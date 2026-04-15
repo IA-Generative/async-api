@@ -1,7 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from starlette.datastructures import UploadFile
 
+from api.core.config import settings
 from api.core.logger import logger
 from api.core.security import auth_guard
 from api.schemas.errors import StorageUploadError
@@ -23,12 +25,24 @@ Permet de stocker un fichier binaire dans le stockage S3.
 - Retourne un identifiant unique (file_id) au format `{client_id}/{uuid}/{filename}`
 """,
 )
-def upload_file(
-    file: Annotated[UploadFile, File(description="Fichier binaire à stocker")],
+async def upload_file(
+    request: Request,
     storage_service: Annotated[StorageService, Depends(StorageService)],
     client_id: Annotated[str, Depends(auth_guard)],
 ) -> StorageUploadResponse:
     """Upload un fichier dans le stockage S3 et retourne un file_id unique."""
+    max_part_size = settings.API_UPLOAD_MAX_SIZE_MB * 1024 * 1024
+    form = await request.form(max_part_size=max_part_size)
+    file = form.get("file")
+
+    if not isinstance(file, UploadFile):
+        raise HTTPException(status_code=400, detail="Missing 'file' field in form data")
+
+    logger.info(
+        f"Upload request received | client_id={client_id} "
+        f"| filename={file.filename} | content_type={file.content_type} "
+        f"| size={file.size}",
+    )
     try:
         file_id = storage_service.upload_file(
             client_id=client_id,
@@ -38,4 +52,5 @@ def upload_file(
     except Exception as e:
         logger.exception(f"Upload failed for client_id={client_id} filename={file.filename}")
         raise StorageUploadError(details=str(e)) from e
+    logger.info(f"Upload success | file_id={file_id}")
     return StorageUploadResponse(file_id=file_id)
