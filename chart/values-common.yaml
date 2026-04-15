@@ -1352,7 +1352,7 @@ pgadmin:
 
 # SQL Exporter configuration (burningalchemist/sql_exporter)
 # @section -- SQL Exporter
-sqlExporter:
+sqlexporter:
   # -- Enable the sql-exporter subchart
   enabled: false
   resources:
