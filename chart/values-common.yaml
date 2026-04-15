@@ -1350,6 +1350,153 @@ pgadmin:
         value: "5050"
   existingSecret: async-api-pgadmin
 
+# SQL Exporter configuration (burningalchemist/sql_exporter)
+# @section -- SQL Exporter
+sqlExporter:
+  # -- Enable the sql-exporter subchart
+  enabled: false
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  createConfig: true
+
+  config:
+    jobs:
+      - job_name: async-api
+        collectors: [async-api]
+        enable_ping: true
+        static_configs:
+          - targets:
+              db: 'postgres://${ASYNC_API_DB_USER}:${ASYNC_API_DB_PASS}@async-api-pg-cluster-ro:5432/task?sslmode=disable'
+            labels:
+              app: async-api
+
+    collector_files:
+      - "/etc/sql_exporter/collectors/*.collector.yml"
+
+  # NOTE: sql_exporter expands ${VAR} via os.Expand which only matches [A-Za-z_][A-Za-z0-9_]*.
+  # Hyphens in env var names won't be substituted, so underscores are used here.
+  env:
+    # async-api
+    ASYNC_API_DB_USER:
+      from:
+        kind: Secret
+        name: async-api-db-appuser
+        key: username
+    ASYNC_API_DB_PASS:
+      from:
+        kind: Secret
+        name: async-api-db-appuser
+        key: password
+
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /metrics
+    # -- Extra labels (e.g. release: kube-prometheus-stack) if your Prometheus requires them
+    selector: {}
+
+  # Collector files mounted at /etc/sql_exporter/collectors/
+  # Grafana time macros ($__timeGroup / $__timeFilter) are removed: sql_exporter
+  # runs queries periodically and Prometheus handles time aggregation via rate()/increase().
+  collectorFiles:
+    async-api.collector.yml:
+      collector_name: async-api
+
+      metrics:
+        # --- 2.1 Adoption KPIs ---
+
+        # Total distinct projects (client_id) that ever used at least one service.
+        # In Grafana: use last_over_time() to display.
+        - metric_name: asyncapi_active_projects_total
+          type: gauge
+          help: "Number of distinct projects (client_id) having submitted at least one task"
+          values: [count]
+          query: |
+            SELECT COUNT(DISTINCT client_id)::float AS count
+            FROM task
+
+        # Distinct projects per service.
+        - metric_name: asyncapi_projects_per_service
+          type: gauge
+          help: "Number of distinct projects (client_id) per service"
+          key_labels: [service]
+          values: [count]
+          query: |
+            SELECT service::text, COUNT(DISTINCT client_id)::float AS count
+            FROM task
+            GROUP BY service
+
+        # Average number of services used per project.
+        - metric_name: asyncapi_avg_services_per_project
+          type: gauge
+          help: "Average number of distinct services used per project (client_id)"
+          values: [avg_services]
+          query: |
+            SELECT COALESCE(AVG(nb_services), 0)::float AS avg_services
+            FROM (
+              SELECT client_id, COUNT(DISTINCT service) AS nb_services
+              FROM task
+              GROUP BY client_id
+            ) sub
+
+        # --- 2.2 Usage KPIs ---
+
+        # Total API calls (tasks submitted) per project. Monotonic counter —
+        # Grafana dashboards should use increase() / rate() for per-day views.
+        - metric_name: asyncapi_api_calls_per_project_total
+          type: counter
+          help: "Total number of tasks submitted per project (client_id)"
+          key_labels: [client_id]
+          values: [count]
+          query: |
+            SELECT client_id::text, COUNT(*)::float AS count
+            FROM task
+            GROUP BY client_id
+
+        # Total API calls per service. Use increase()/rate() in Grafana.
+        - metric_name: asyncapi_api_calls_per_service_total
+          type: counter
+          help: "Total number of tasks submitted per service"
+          key_labels: [service]
+          values: [count]
+          query: |
+            SELECT service::text, COUNT(*)::float AS count
+            FROM task
+            GROUP BY service
+
+        # Combined project x service counter — useful for slicing.
+        - metric_name: asyncapi_api_calls_total
+          type: counter
+          help: "Total number of tasks submitted per project and service"
+          key_labels: [client_id, service]
+          values: [count]
+          query: |
+            SELECT client_id::text, service::text, COUNT(*)::float AS count
+            FROM task
+            GROUP BY client_id, service
+
+        # Monthly call volume — for Bar chart "growth per month" panel.
+        # Emits one series per (month) label for the last 12 months.
+        - metric_name: asyncapi_api_calls_monthly
+          type: gauge
+          help: "Tasks submitted grouped by calendar month (ISO 8601, UTC), last 12 months"
+          key_labels: [month]
+          values: [count]
+          query: |
+            SELECT
+              to_char(date_trunc('month', submition_date), 'YYYY-MM') AS month,
+              COUNT(*)::float AS count
+            FROM task
+            WHERE submition_date >= date_trunc('month', now()) - INTERVAL '12 months'
+            GROUP BY 1
+            ORDER BY 1
+
 
 # Vault Secrets Operator - VaultStaticSecret pour synchroniser les identifiants DB depuis Vault
 # Quand enabled: true, le Secret K8s db.secretName est créé/mis à jour par le VSO (pas par db-secret.yaml)
