@@ -11,7 +11,7 @@ from api.schemas.enum import ReadyStatus
 from api.schemas.errors import DependenciesNotReady
 from api.services.queue_service import QueueSender
 
-router = APIRouter()
+router = APIRouter(tags=["Status"])
 
 
 @router.get(path="/health", summary="Vérifie la santé de l'API")
