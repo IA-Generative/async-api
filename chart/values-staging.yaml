@@ -21,6 +21,16 @@ api:
     # Overrides the image tag whose default is the chart appVersion.
     tag: "v0.3.13"
 
+  # -- Writable /tmp for SpooledTemporaryFile during multipart uploads
+  # (required because readOnlyRootFilesystem is enabled by default).
+  # @section -- Api
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+    - name: tmp
+      emptyDir: {}
+
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
