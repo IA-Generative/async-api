@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import TYPE_CHECKING, Annotated
 
@@ -95,7 +96,7 @@ class TaskService:
                 return TaskDataSuccess(
                     task_id=task_info.task_id,
                     submission_date=task_info.submition_date,
-                    result=task_info.response,
+                    result=json.loads(task_info.response) if task_info.response else None,
                     start_date=task_info.start_date,
                     end_date=task_info.end_date,
                 )
