@@ -68,20 +68,18 @@ class TestOdtRendererHappyPath:
 
 
 class TestOdtRendererMissingKeys:
-    def test_missing_simple_key_renders_empty(self) -> None:
-        """In lenient mode, Relatorio renders missing keys as empty strings.
-
-        The warning is the signal that a key was missing, not the document content.
-        """
+    def test_missing_simple_key_keeps_placeholder(self) -> None:
+        """Missing keys keep their placeholder text visible in the document."""
         renderer = OdtRenderer()
 
         result = renderer.render(
             _load_template(),
-            {"nom": "Dupont", "is_admin": True, "items": []},
+            {"nom": "Dupont", "is_admin": "oui", "items": []},
         )
 
         content = _extract_content_xml(result.content)
         assert "Dupont" in content
+        assert "&lt;ville&gt;" in content
         assert any("ville" in w for w in result.warnings)
 
     def test_missing_key_generates_warning(self) -> None:
@@ -113,10 +111,20 @@ class TestOdtRendererEdgeCases:
         assert result.warnings == []
         assert "ignored" not in _extract_content_xml(result.content)
 
-    def test_conditional_empty_hides_block(self) -> None:
+    def test_conditional_empty_string_hides_block(self) -> None:
         """Template uses is_admin!='' so empty string hides the block."""
         renderer = OdtRenderer()
         data = {**_load_data(), "is_admin": ""}
+
+        result = renderer.render(_load_template(), data)
+
+        content = _extract_content_xml(result.content)
+        assert "Vous etes administrateur" not in content
+
+    def test_conditional_false_bool_hides_block(self) -> None:
+        """Boolean False is normalized to empty string → hides the block."""
+        renderer = OdtRenderer()
+        data = {**_load_data(), "is_admin": False}
 
         result = renderer.render(_load_template(), data)
 
