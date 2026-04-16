@@ -20,7 +20,16 @@ Pour démarrer rapidement, téléchargez le template de référence et son jeu d
 - [**test_template.odt**](/docs-examples/generation-render/test_template.odt) — template couvrant
   les 3 types de balises Relatorio (simple, conditionnelle `if`, itérative `for`)
 - [**test_data.json**](/docs-examples/generation-render/test_data.json) — jeu de données
-  correspondant pour remplir le template
+  correspondant pour remplir le template :
+
+```json
+{
+  "nom": "Dupont",
+  "ville": "Nice",
+  "is_admin": true,
+  "items": ["dossier-001", "dossier-002", "dossier-003"]
+}
+```
 
 ## Flux d'utilisation
 
