@@ -88,7 +88,7 @@ api:
       annotations: {}
       endpoints:
         - path: /internal/metrics
-          honorLabels: false
+          honorLabels: true
           interval: 30s
 
   resources:
