@@ -1400,6 +1400,15 @@ sqlexporter:
     path: /metrics
     # -- Extra labels (e.g. release: kube-prometheus-stack) if your Prometheus requires them
     selector: {}
+    # Keep the "service" label from SQL queries instead of letting
+    # Prometheus overwrite it with the K8s Service name.
+    # The original metric label is saved as "exported_service" by Prometheus
+    # when there's a collision; this relabeling restores it.
+    metricRelabelings:
+      - sourceLabels: [exported_service]
+        targetLabel: service
+        regex: (.+)
+        action: replace
 
   # Collector files mounted at /etc/sql_exporter/collectors/
   # Grafana time macros ($__timeGroup / $__timeFilter) are removed: sql_exporter
