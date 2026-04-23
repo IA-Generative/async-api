@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "boto3>=1.35",
+    "docxtpl>=0.20.2",
     "loguru>=0.7.3",
     "mic-worker==0.1.2",
     "pydantic-settings>=2.0",
