@@ -10,6 +10,7 @@ from api.core.config import settings
 from api.core.exception_handlers import register_exception_handlers
 from api.core.logger import logger
 from api.core.utils import get_version
+from api.docs.code_samples import inject_code_samples
 from api.docs.services import (
     build_openapi_tags,
     catalog_anchor,
@@ -26,6 +27,7 @@ class RoutePrefix(StrEnum):
     V1 = "/v1"
     STORAGE = "/storage"
     INTERNAL = "/internal"
+
 
 logger.info("🚀 Starting async API")
 logger.info("⏳ Loading services configuration ...")
@@ -107,6 +109,7 @@ def openapi_redoc() -> JSONResponse:
             "tags": service_tag_names(),
         },
     ]
+    inject_code_samples(schema)
     return JSONResponse(schema)
 
 
