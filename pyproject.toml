@@ -168,3 +168,10 @@ sort = "-miss"
 
 [tool.pytest.ini_options]
 addopts = "--ignore=workers/python"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.13"
+exclude = ["workers", ".venv"]
+typeCheckingMode = "off"
