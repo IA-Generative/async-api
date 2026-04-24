@@ -1,4 +1,3 @@
-import http
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, status
@@ -15,7 +14,7 @@ from api.schemas import (
     TaskResponse,
 )
 from api.schemas.enum import ErrorEnum, TaskStatus
-from api.schemas.errors import TaskNotFound
+from api.schemas.errors import TASK_ERROR, TaskNotFound
 from api.services import TaskService
 
 router = APIRouter(tags=["Tasks"])
@@ -36,18 +35,9 @@ def receive_callback(body: TaskCallback) -> None:
             "model": TaskErrorResponse,
             "description": "Body validation error (non-conforme au JSON schema du service)",
         },
-        401: {
-            "model": TaskErrorResponse,
-            "description": http.HTTPStatus.UNAUTHORIZED.phrase,
-        },
-        403: {
-            "model": TaskErrorResponse,
-            "description": "Client non autorisé à utiliser ce service",
-        },
-        404: {
-            "model": TaskErrorResponse,
-            "description": ErrorEnum.SERVICE_NOT_FOUND.value,
-        },
+        401: TASK_ERROR.AUTH,
+        403: TASK_ERROR.FORBIDDEN,
+        404: TASK_ERROR.SERVICE_NOT_FOUND,
         422: {
             "description": "Erreur de validation du corps de la requête (format invalide)",
         },
@@ -55,10 +45,7 @@ def receive_callback(body: TaskCallback) -> None:
             "model": TaskErrorResponse,
             "description": "Quota dépassé (service ou client/service)",
         },
-        500: {
-            "model": TaskErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        500: TASK_ERROR.INTERNAL,
     },
     summary="Créer une tâche asynchrone",
     description="""
@@ -103,14 +90,8 @@ async def create_task(
 @router.get(
     path="/services/{service}/tasks/{task_id}",
     responses={
-        401: {
-            "model": TaskErrorResponse,
-            "description": http.HTTPStatus.UNAUTHORIZED.phrase,
-        },
-        403: {
-            "model": TaskErrorResponse,
-            "description": "Client non autorisé à utiliser ce service",
-        },
+        401: TASK_ERROR.AUTH,
+        403: TASK_ERROR.FORBIDDEN,
         404: {
             "model": TaskErrorResponse,
             "description": f"{ErrorEnum.SERVICE_NOT_FOUND.value} ou {ErrorEnum.TASK_NOT_FOUND.value}",
@@ -118,10 +99,7 @@ async def create_task(
         422: {
             "description": "Erreur de validation des paramètres de la requête",
         },
-        500: {
-            "model": TaskErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        500: TASK_ERROR.INTERNAL,
     },
     summary="Récupérer le statut d'une tâche",
     description="""

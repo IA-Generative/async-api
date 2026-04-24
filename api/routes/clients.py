@@ -1,11 +1,10 @@
-import http
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, status
 
 from api.core.security import admin_auth_guard
 from api.schemas.client import ClientCreateRequest, ClientResponse, ClientUpdateRequest
-from api.schemas.errors import ErrorResponse
+from api.schemas.errors import ERROR, ErrorResponse
 from api.services.client_service import ClientService
 
 router = APIRouter(tags=["Clients"])
@@ -16,21 +15,13 @@ router = APIRouter(tags=["Clients"])
     status_code=status.HTTP_201_CREATED,
     summary="Créer un client",
     responses={
-        401: {
-            "model": ErrorResponse,
-            "description": "Authentification administrateur requise ou invalide",
-        },
+        401: ERROR.ADMIN_AUTH,
         409: {
             "model": ErrorResponse,
             "description": "Un client avec ce client_id existe déjà",
         },
-        422: {
-            "description": "Erreur de validation du corps de la requête",
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        422: ERROR.BODY_VALIDATION,
+        500: ERROR.INTERNAL,
     },
 )
 async def create_client(
@@ -45,14 +36,8 @@ async def create_client(
     path="/clients",
     summary="Lister les clients actifs",
     responses={
-        401: {
-            "model": ErrorResponse,
-            "description": "Authentification administrateur requise ou invalide",
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        401: ERROR.ADMIN_AUTH,
+        500: ERROR.INTERNAL,
     },
 )
 async def list_clients(
@@ -66,18 +51,9 @@ async def list_clients(
     path="/clients/{client_id}",
     summary="Détail d'un client",
     responses={
-        401: {
-            "model": ErrorResponse,
-            "description": "Authentification administrateur requise ou invalide",
-        },
-        404: {
-            "model": ErrorResponse,
-            "description": "Client introuvable",
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        401: ERROR.ADMIN_AUTH,
+        404: ERROR.CLIENT_NOT_FOUND,
+        500: ERROR.INTERNAL,
     },
 )
 async def get_client(
@@ -92,21 +68,10 @@ async def get_client(
     path="/clients/{client_id}",
     summary="Modifier un client",
     responses={
-        401: {
-            "model": ErrorResponse,
-            "description": "Authentification administrateur requise ou invalide",
-        },
-        404: {
-            "model": ErrorResponse,
-            "description": "Client introuvable",
-        },
-        422: {
-            "description": "Erreur de validation du corps de la requête",
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        401: ERROR.ADMIN_AUTH,
+        404: ERROR.CLIENT_NOT_FOUND,
+        422: ERROR.BODY_VALIDATION,
+        500: ERROR.INTERNAL,
     },
 )
 async def update_client(

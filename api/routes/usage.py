@@ -1,10 +1,9 @@
-import http
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
 
 from api.core.security import admin_auth_guard
-from api.schemas.errors import ErrorResponse
+from api.schemas.errors import ERROR
 from api.schemas.usage import ClientUsageResponse
 from api.services.usage_service import UsageService
 
@@ -15,17 +14,11 @@ router = APIRouter(tags=["Usage"])
     path="/usage/{client_id}",
     summary="Usage par client et par service",
     responses={
-        401: {
-            "model": ErrorResponse,
-            "description": "Authentification administrateur requise ou invalide",
-        },
+        401: ERROR.ADMIN_AUTH,
         422: {
             "description": "Erreur de validation des paramètres de la requête (days hors intervalle)",
         },
-        500: {
-            "model": ErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        500: ERROR.INTERNAL,
     },
 )
 async def get_client_usage(

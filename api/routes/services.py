@@ -1,10 +1,9 @@
-import http
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
 from api.schemas import ServiceInfo
-from api.schemas.errors import ErrorResponse
+from api.schemas.errors import ERROR
 from api.services import ServiceService
 
 router = APIRouter(tags=["Services"])
@@ -19,10 +18,7 @@ router = APIRouter(tags=["Services"])
         "voir la section **« Catalogue des services »** de cette documentation."
     ),
     responses={
-        500: {
-            "model": ErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
-        },
+        500: ERROR.INTERNAL,
     },
 )
 def get_services(

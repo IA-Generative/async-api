@@ -1,9 +1,12 @@
+import http
+from typing import TypedDict
+
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from api.core.logger import logger
-from api.schemas import ReadyComponent
-from api.schemas.enum import ReadyStatus
+from api.schemas import ReadyComponent, TaskErrorResponse
+from api.schemas.enum import ErrorEnum, ReadyStatus
 from api.schemas.status import ReadyResponse
 
 
@@ -140,3 +143,55 @@ class StorageUploadError(AppException):
     status_code = 500
     number = 500002
     description = "File upload failed"
+
+
+class OpenAPIErrorResponse(TypedDict, total=False):
+    """Shape d'une entrée de `responses={}` pour la documentation OpenAPI."""
+
+    model: type[BaseModel]
+    description: str
+
+
+class ERROR:
+    """Réponses d'erreur OpenAPI réutilisables (modèle `ErrorResponse`)."""
+
+    ADMIN_AUTH: OpenAPIErrorResponse = {
+        "model": ErrorResponse,
+        "description": "Authentification administrateur requise ou invalide",
+    }
+    AUTH: OpenAPIErrorResponse = {
+        "model": ErrorResponse,
+        "description": http.HTTPStatus.UNAUTHORIZED.phrase,
+    }
+    CLIENT_NOT_FOUND: OpenAPIErrorResponse = {
+        "model": ErrorResponse,
+        "description": "Client introuvable",
+    }
+    BODY_VALIDATION: OpenAPIErrorResponse = {
+        "description": "Erreur de validation du corps de la requête",
+    }
+    INTERNAL: OpenAPIErrorResponse = {
+        "model": ErrorResponse,
+        "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
+    }
+
+
+class TASK_ERROR:
+    """Réponses d'erreur OpenAPI réutilisables pour les routes de tâches (modèle `TaskErrorResponse`)."""
+
+    AUTH: OpenAPIErrorResponse = {
+        "model": TaskErrorResponse,
+        "description": http.HTTPStatus.UNAUTHORIZED.phrase,
+    }
+    FORBIDDEN: OpenAPIErrorResponse = {
+        "model": TaskErrorResponse,
+        "description": "Client non autorisé à utiliser ce service",
+    }
+    SERVICE_NOT_FOUND: OpenAPIErrorResponse = {
+        "model": TaskErrorResponse,
+        "description": ErrorEnum.SERVICE_NOT_FOUND.value,
+    }
+    INTERNAL: OpenAPIErrorResponse = {
+        "model": TaskErrorResponse,
+        "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.phrase,
+    }
