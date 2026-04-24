@@ -1,0 +1,22 @@
+meta {
+  name: 03 Get task status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/services/{{service}}/tasks/{{task_id}}
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{client_id}}
+  password: {{client_secret}}
+}
+
+docs {
+  Poll le statut de la tache. A relancer plusieurs fois jusqu'a obtenir status "success".
+  Quand la tache reussit, `data.result.download_url` contient une URL presignee S3
+  permettant de telecharger le fichier rendu.
+}

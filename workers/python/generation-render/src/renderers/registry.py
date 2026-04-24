@@ -1,8 +1,10 @@
 from src.renderers.base import TemplateRenderer
+from src.renderers.docx import DocxRenderer
 from src.renderers.odt import OdtRenderer
 
 RENDERERS: dict[str, type[TemplateRenderer]] = {
     ".odt": OdtRenderer,
+    ".docx": DocxRenderer,
 }
 
 

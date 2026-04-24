@@ -10,7 +10,7 @@ class RenderResult:
 
 class TemplateRenderer(ABC):
     @abstractmethod
-    def render(self, template_content: bytes, data: dict[str, str]) -> RenderResult:
+    def render(self, template_content: bytes, data: dict[str, object]) -> RenderResult:
         """Replace placeholders in the template with the provided data.
 
         Args:

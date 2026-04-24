@@ -1,0 +1,32 @@
+meta {
+  name: 01 Upload docx template
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/storage/upload
+  body: multipartForm
+  auth: basic
+}
+
+auth:basic {
+  username: {{client_id}}
+  password: {{client_secret}}
+}
+
+body:multipart-form {
+  file: @file(../api/docs/examples/generation-render/test_template.docx)
+}
+
+script:post-response {
+  if (res.getStatus() >= 200 && res.getStatus() < 300) {
+    bru.setEnvVar("file_id", res.getBody().file_id);
+  }
+}
+
+docs {
+  Upload du template .docx vers S3 (MinIO en local).
+  Le file_id renvoye est automatiquement stocke dans la variable d'environnement `file_id`
+  pour etre reutilise par la requete suivante.
+}

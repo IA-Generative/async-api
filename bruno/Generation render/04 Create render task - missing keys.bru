@@ -1,0 +1,39 @@
+meta {
+  name: 04 Create render task - missing keys
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/services/{{service}}/tasks
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{client_id}}
+  password: {{client_secret}}
+}
+
+body:json {
+  {
+    "body": {
+      "file_id": "{{file_id}}",
+      "data": {
+        "nom": "Dupont"
+      }
+    }
+  }
+}
+
+script:post-response {
+  if (res.getStatus() >= 200 && res.getStatus() < 300) {
+    bru.setEnvVar("task_id", res.getBody().data.task_id);
+  }
+}
+
+docs {
+  Variante pour verifier le comportement quand des placeholders du template ne sont
+  pas fournis. Attendu : la tache reussit, mais `result.warnings` liste les cles manquantes.
+  Relance ensuite "03 Get task status" pour observer le resultat.
+}

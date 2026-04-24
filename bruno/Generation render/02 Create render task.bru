@@ -1,0 +1,41 @@
+meta {
+  name: 02 Create render task
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/services/{{service}}/tasks
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{client_id}}
+  password: {{client_secret}}
+}
+
+body:json {
+  {
+    "body": {
+      "file_id": "{{file_id}}",
+      "data": {
+        "nom": "Dupont",
+        "ville": "Nice",
+        "is_admin": true,
+        "items": ["dossier-001", "dossier-002", "dossier-003"]
+      }
+    }
+  }
+}
+
+script:post-response {
+  if (res.getStatus() >= 200 && res.getStatus() < 300) {
+    bru.setEnvVar("task_id", res.getBody().data.task_id);
+  }
+}
+
+docs {
+  Cree une tache de rendu docx. Le `file_id` provient de la requete 01.
+  Le `task_id` renvoye est stocke dans l'environnement pour etre poll par la requete 03.
+}
