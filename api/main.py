@@ -10,7 +10,12 @@ from api.core.config import settings
 from api.core.exception_handlers import register_exception_handlers
 from api.core.logger import logger
 from api.core.utils import get_version
-from api.docs.services import build_openapi_tags, catalog_anchor, service_tag_names
+from api.docs.services import (
+    build_openapi_tags,
+    catalog_anchor,
+    roadmap_tag_names,
+    service_tag_names,
+)
 from api.repositories.services_config_repository import ServicesConfigRepository
 from api.routes import clients, metrics, services, status, storage, tasks, usage
 
@@ -92,6 +97,10 @@ def openapi_redoc() -> JSONResponse:
         {
             "name": "API",
             "tags": [tag["name"] for tag in technical_tags],
+        },
+        {
+            "name": "Feuille de route",
+            "tags": roadmap_tag_names(),
         },
         {
             "name": "Services disponibles",
