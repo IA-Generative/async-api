@@ -22,6 +22,12 @@ def health() -> HealthResponse:
 @router.get(
     path="/ready",
     summary="Vérifie si les dépendances sont prêtes",
+    responses={
+        503: {
+            "model": ReadyResponse,
+            "description": "Une ou plusieurs dépendances ne sont pas prêtes (base de données, broker, ...)",
+        },
+    },
 )
 async def ready(
     db: Annotated[AsyncSession, Depends(dependency=get_db_session)],
