@@ -163,3 +163,11 @@ test = [
     "pytest>=8.4.2",
 ]
 
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.13"
+include = ["src", "tests"]
+exclude = [".venv", "demo", "generation-render"]
+typeCheckingMode = "off"
+
