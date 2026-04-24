@@ -10,7 +10,6 @@ from src.renderers.base import RenderResult, TemplateRenderer
 class DocxRenderer(TemplateRenderer):
     def render(self, template_content: bytes, data: dict[str, object]) -> RenderResult:
         template = DocxTemplate(BytesIO(template_content))
-        # DOCX isn't HTML; docxtpl handles XML escaping itself at render time.
         jinja_env = Environment(undefined=DebugUndefined)  # noqa: S701
 
         expected_keys = template.get_undeclared_template_variables(jinja_env=jinja_env)

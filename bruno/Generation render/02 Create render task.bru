@@ -30,7 +30,7 @@ body:json {
 }
 
 script:post-response {
-  if (res.getStatus() === 201) {
+  if (res.getStatus() >= 200 && res.getStatus() < 300) {
     bru.setEnvVar("task_id", res.getBody().data.task_id);
   }
 }

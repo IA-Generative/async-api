@@ -20,7 +20,7 @@ body:multipart-form {
 }
 
 script:post-response {
-  if (res.getStatus() === 201) {
+  if (res.getStatus() >= 200 && res.getStatus() < 300) {
     bru.setEnvVar("file_id", res.getBody().file_id);
   }
 }

@@ -10,7 +10,7 @@ WORKER_PYTHON_CONTAINER=worker-python
 .PHONY: install-uv install-local lint bump-patch bump-minor \
         up down logs-api logs-listener logs-consumer logs-worker-python \
         build build-api build-consumer build-worker-python \
-        build-generation-render-worker \
+        build-generation-render-worker rebuild-generation-render-worker \
         migrate stamp-db list-revision upgrade-revision \
         test coverage clean clean-cache help
 
@@ -85,7 +85,10 @@ build-consumer: ## Lance la construction de l'image Docker consumer JS
 build-listener: ## Lance la construction de l'image Docker du listener de l'api
 	docker compose build worker-python
 
-build-generation-render-worker: ## Reconstruit l'image du worker generation-render sans cache
+build-generation-render-worker: ## Lance la construction de l'image Docker du worker generation-render
+	docker compose build generation-render-worker
+
+rebuild-generation-render-worker: ## Reconstruit l'image du worker generation-render sans cache (quand une dépendance change)
 	docker compose build --no-cache generation-render-worker
 
 migration-stamp-db: ## Change le pointeur alembic à une révision particulière
