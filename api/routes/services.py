@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from api.schemas import ServiceInfo
+from api.schemas.errors import ERROR
 from api.services import ServiceService
 
 router = APIRouter(tags=["Services"])
@@ -16,6 +17,9 @@ router = APIRouter(tags=["Services"])
         "Pour le contrat d'interface détaillé (body, result, exemples) de chaque service, "
         "voir la section **« Catalogue des services »** de cette documentation."
     ),
+    responses={
+        500: ERROR.INTERNAL,
+    },
 )
 def get_services(
     service_service: Annotated[ServiceService, Depends(ServiceService)],

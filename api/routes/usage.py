@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query
 
 from api.core.security import admin_auth_guard
+from api.schemas.errors import ERROR
 from api.schemas.usage import ClientUsageResponse
 from api.services.usage_service import UsageService
 
@@ -12,6 +13,13 @@ router = APIRouter(tags=["Usage"])
 @router.get(
     path="/usage/{client_id}",
     summary="Usage par client et par service",
+    responses={
+        401: ERROR.ADMIN_AUTH,
+        422: {
+            "description": "Erreur de validation des paramètres de la requête (days hors intervalle)",
+        },
+        500: ERROR.INTERNAL,
+    },
 )
 async def get_client_usage(
     client_id: Annotated[str, Path(description="Identifiant du client")],

@@ -1,4 +1,3 @@
-import http
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, status
@@ -15,7 +14,7 @@ from api.schemas import (
     TaskResponse,
 )
 from api.schemas.enum import ErrorEnum, TaskStatus
-from api.schemas.errors import TaskNotFound
+from api.schemas.errors import TASK_ERROR, TaskNotFound
 from api.services import TaskService
 
 router = APIRouter(tags=["Tasks"])
@@ -32,14 +31,21 @@ def receive_callback(body: TaskCallback) -> None:
     status_code=status.HTTP_201_CREATED,
     callbacks=callback_router.routes,
     responses={
-        404: {
+        400: {
             "model": TaskErrorResponse,
-            "description": ErrorEnum.SERVICE_NOT_FOUND.value,
+            "description": "Body validation error (non-conforme au JSON schema du service)",
         },
-        500: {
+        401: TASK_ERROR.AUTH,
+        403: TASK_ERROR.FORBIDDEN,
+        404: TASK_ERROR.SERVICE_NOT_FOUND,
+        422: {
+            "description": "Erreur de validation du corps de la requête (format invalide)",
+        },
+        429: {
             "model": TaskErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            "description": "Quota dépassé (service ou client/service)",
         },
+        500: TASK_ERROR.INTERNAL,
     },
     summary="Créer une tâche asynchrone",
     description="""
@@ -84,14 +90,16 @@ async def create_task(
 @router.get(
     path="/services/{service}/tasks/{task_id}",
     responses={
+        401: TASK_ERROR.AUTH,
+        403: TASK_ERROR.FORBIDDEN,
         404: {
             "model": TaskErrorResponse,
-            "description": ErrorEnum.TASK_NOT_FOUND.value,
+            "description": f"{ErrorEnum.SERVICE_NOT_FOUND.value} ou {ErrorEnum.TASK_NOT_FOUND.value}",
         },
-        500: {
-            "model": TaskErrorResponse,
-            "description": http.HTTPStatus.INTERNAL_SERVER_ERROR.value,
+        422: {
+            "description": "Erreur de validation des paramètres de la requête",
         },
+        500: TASK_ERROR.INTERNAL,
     },
     summary="Récupérer le statut d'une tâche",
     description="""
@@ -111,8 +119,7 @@ async def get_task(
         Path(
             default=...,
             description=(
-                "Nom du service associé à la tâche. "
-                "Voir la section « Catalogue des services » pour la liste."
+                "Nom du service associé à la tâche. Voir la section « Catalogue des services » pour la liste."
             ),
         ),
     ],

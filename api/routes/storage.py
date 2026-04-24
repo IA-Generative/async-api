@@ -6,7 +6,7 @@ from starlette.datastructures import UploadFile
 from api.core.config import settings
 from api.core.logger import logger
 from api.core.security import auth_guard
-from api.schemas.errors import StorageUploadError
+from api.schemas.errors import ERROR, ErrorResponse, StorageUploadError
 from api.schemas.storage import StorageUploadResponse
 from api.services.storage_service import StorageService
 
@@ -24,6 +24,16 @@ Permet de stocker un fichier binaire dans le stockage S3.
 - Le fichier est automatiquement supprimé après 24h
 - Retourne un identifiant unique (file_id) au format `{client_id}/{uuid}/{filename}`
 """,
+    responses={
+        400: {
+            "description": "Champ 'file' manquant dans le form-data",
+        },
+        401: ERROR.AUTH,
+        500: {
+            "model": ErrorResponse,
+            "description": "Échec de l'upload du fichier dans le stockage S3",
+        },
+    },
     openapi_extra={
         "requestBody": {
             "content": {
