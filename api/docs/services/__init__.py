@@ -54,8 +54,8 @@ SERVICES: tuple[ServiceDoc, ...] = (
         name="generation_render",
         tag="Remplissage de templates",
         short_description=(
-            "Remplit un template `.odt` avec un dictionnaire de données "
-            "(publipostage programmatique, basé sur Relatorio)."
+            "Remplit un template `.odt` (Relatorio) ou `.docx` (Jinja2) "
+            "avec un dictionnaire de données (publipostage programmatique)."
         ),
     ),
 )
