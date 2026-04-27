@@ -1,3 +1,4 @@
+import copy
 from enum import StrEnum
 from pathlib import Path
 
@@ -91,9 +92,10 @@ def openapi_redoc() -> JSONResponse:
     `x-tagGroups` pour regrouper visuellement dans ReDoc. Swagger continue
     d'utiliser le schéma de base (propre, focus testing).
     """
-    base_schema = app.openapi()
-    # Copie défensive pour ne pas muter le schema mis en cache par FastAPI
-    schema = dict(base_schema)
+    # deepcopy obligatoire : `inject_code_samples` mute les dicts d'opération
+    # imbriqués (`paths[...][method]`), partagés avec le cache `app.openapi_schema`
+    # de FastAPI. Sans deepcopy, Swagger hériterait des `x-codeSamples` au 1er hit.
+    schema = copy.deepcopy(app.openapi())
     schema["tags"] = technical_tags + build_openapi_tags()
     schema["x-tagGroups"] = [
         {
