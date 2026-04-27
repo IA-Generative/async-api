@@ -1,3 +1,4 @@
+import copy
 from enum import StrEnum
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from api.core.config import settings
 from api.core.exception_handlers import register_exception_handlers
 from api.core.logger import logger
 from api.core.utils import get_version
+from api.docs.code_samples import inject_code_samples
 from api.docs.services import (
     build_openapi_tags,
     catalog_anchor,
@@ -26,6 +28,7 @@ class RoutePrefix(StrEnum):
     V1 = "/v1"
     STORAGE = "/storage"
     INTERNAL = "/internal"
+
 
 logger.info("🚀 Starting async API")
 logger.info("⏳ Loading services configuration ...")
@@ -89,9 +92,10 @@ def openapi_redoc() -> JSONResponse:
     `x-tagGroups` pour regrouper visuellement dans ReDoc. Swagger continue
     d'utiliser le schéma de base (propre, focus testing).
     """
-    base_schema = app.openapi()
-    # Copie défensive pour ne pas muter le schema mis en cache par FastAPI
-    schema = dict(base_schema)
+    # deepcopy obligatoire : `inject_code_samples` mute les dicts d'opération
+    # imbriqués (`paths[...][method]`), partagés avec le cache `app.openapi_schema`
+    # de FastAPI. Sans deepcopy, Swagger hériterait des `x-codeSamples` au 1er hit.
+    schema = copy.deepcopy(app.openapi())
     schema["tags"] = technical_tags + build_openapi_tags()
     schema["x-tagGroups"] = [
         {
@@ -107,6 +111,7 @@ def openapi_redoc() -> JSONResponse:
             "tags": service_tag_names(),
         },
     ]
+    inject_code_samples(schema)
     return JSONResponse(schema)
 
 
