@@ -1,0 +1,50 @@
+name: Trigger CPiN sync
+
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+jobs:
+  path-filter:
+    runs-on: ubuntu-latest
+    outputs:
+      charts: ${{ steps.filter.outputs.charts }}
+      api: ${{ steps.filter.outputs.api }}
+      ci: ${{ steps.filter.outputs.ci }}
+      widgets: ${{ steps.filter.outputs.widgets }}
+    steps:
+    - name: Checks-out repository
+      uses: actions/checkout@v4
+
+    - name: Check updated files paths
+      uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        base: main
+        ref: ${{ github.ref_name }}
+        filters: |
+          charts:
+            - 'chart/**'
+          api:
+            - 'api/**'
+          ci:
+            - '.gitlab-ci-dso.yml'
+          widgets:
+            - 'grist-widgets/**'
+
+  sync:
+    needs:
+    - path-filter
+    uses: ArnaudTA/actions/.github/workflows/sync.yaml@v1
+    if: ${{ needs.path-filter.outputs.charts == 'true' || needs.path-filter.outputs.api == 'true' || needs.path-filter.outputs.ci == 'true' || needs.path-filter.outputs.widgets == 'true' }}
+    secrets:
+      GITLAB_PROJECT_NAME: "${{ vars.GITLAB_PROJECT_NAME }}"
+      GITLAB_MIRROR_ID: "${{ vars.GITLAB_MIRROR_ID }}"
+      GITLAB_TRIGGER_TOKEN: "${{ secrets.GITLAB_TRIGGER_TOKEN }}"
+      GITLAB_URL: "${{ secrets.GITLAB_URL }}"
+    with:
+      BRANCH_NAME: ${{ github.ref_name }}
+      SYNC_ALL: false
+      WAIT: false
