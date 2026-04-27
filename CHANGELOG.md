@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/IA-Generative/async-api/compare/v0.5.0...v0.6.0) (2026-04-27)
+
+
+### Features
+
+* **monitoring:** add client id in metrics ([#39](https://github.com/IA-Generative/async-api/issues/39)) ([eccf62f](https://github.com/IA-Generative/async-api/commit/eccf62fa158694bf287be39884198cfcea5f836f))
+* **monitoring:** improve metrics ([#43](https://github.com/IA-Generative/async-api/issues/43)) ([4ba39ce](https://github.com/IA-Generative/async-api/commit/4ba39cec9534ce19643f934ab719ca3ffe9ecea1))
+
+
+### Bug Fixes
+
+* auto sync job ([e9d6342](https://github.com/IA-Generative/async-api/commit/e9d6342a6502955d573e2ad1b47604f314f669ea))
+* auto sync job ([0ba104a](https://github.com/IA-Generative/async-api/commit/0ba104aed68b5fa5b6d69afcc01bafffc5ec7cb9))
+* clean ci/cd gitlab ([81b0917](https://github.com/IA-Generative/async-api/commit/81b09174b420627b1535df8f18ad4f288151ddde))
+* improve client create doc example and handle empty authorizations ([#41](https://github.com/IA-Generative/async-api/issues/41)) ([f06ec37](https://github.com/IA-Generative/async-api/commit/f06ec377ef96311b102e475a35675e0d57f4a82d))
+* ressource request ([e744c6f](https://github.com/IA-Generative/async-api/commit/e744c6fa61aaa0fca495b61b081bd124fd29f85d))
+
 ## [0.5.0](https://github.com/IA-Generative/async-api/compare/v0.4.0...v0.5.0) (2026-03-31)
 
 
