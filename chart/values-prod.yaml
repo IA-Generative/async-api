@@ -100,14 +100,18 @@ api:
       memory: "256Mi"
       # -- CPU request for the app.
       # @section -- Api
-      cpu: "200m"
+      cpu: "100m"
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
     limits:
       # -- Memory limit for the app.
       # @section -- Api
       memory: "2Gi"
       # -- CPU limit for the app.
       # @section -- Api
-      cpu: "1"
+      cpu: "500m"
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
 
 # Workers configuration
 # @section -- Workers
@@ -163,17 +167,17 @@ workers:
         requests:
           # -- CPU request
           # @section -- Workers
-          cpu: "200m"
+          cpu: "100m"
           # -- Memory request
           # @section -- Workers
-          memory: "256Mi"
+          memory: "128Mi"
         limits:
           # -- CPU limit
           # @section -- Workers
-          cpu: "1"
+          cpu: "500m"
           # -- Memory limit
           # @section -- Workers
-          memory: "1Gi"
+          memory: "512Mi"
 
       # -- Health check probes configuration
       # @section -- Workers
@@ -655,13 +659,13 @@ rabbitmq:
   resources:
     # -- RabbitMQ resource limits
     limits:
-      cpu: 2
-      memory: 4Gi
+      cpu: 1
+      memory: 2Gi
     # -- RabbitMQ resource requests
     requests:
-      cpu: 200m
-      memory: 2Gi
-  # -- RabbitMQ service configuration
+      cpu: 100m
+      memory: 1Gi
+  # -- RabbitMQ metrics configuration (enables rabbitmq_prometheus plugin on port 15692)
   metrics:
     # -- Enable RabbitMQ metrics (auto-enables rabbitmq_prometheus plugin)
     enabled: true
@@ -696,11 +700,11 @@ cnpg:
   resources:
     # -- PostgreSQL resource limits
     limits:
-      cpu: 1
-      memory: 2Gi
+      cpu: 500m
+      memory: 1Gi
     requests:
-      cpu: 200m
-      memory: 512Mi
+      cpu: 100m
+      memory: 256Mi
   monitoring:
     enabled: true
   backup:

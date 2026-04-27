@@ -770,5 +770,5 @@ vaultSecrets:
         name: llm-hub-credentials
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: staging/admin-credentials
+      vaultPath: staging/llm-hub-credentials
       type: kv-v2
