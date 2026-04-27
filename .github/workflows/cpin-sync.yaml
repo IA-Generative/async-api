@@ -40,9 +40,9 @@ jobs:
     uses: dnum-mi/fabnum-cicd/.github/workflows/sync-cpin.yml@v0
     if: ${{ needs.path-filter.outputs.charts == 'true' || needs.path-filter.outputs.api == 'true' || needs.path-filter.outputs.ci == 'true' || needs.path-filter.outputs.widgets == 'true' }}
     with:
-      GITLAB_URL: "${{ secrets.GITLAB_URL }}"
+      GITLAB_URL: "${{ vars.GITLAB_URL }}"
       GIT_MIRROR_PROJECT_ID: "${{ vars.GITLAB_MIRROR_ID }}"
-      BRANCH_TO_SYNC: ${{ github.ref_name }}
+      BRANCH_TO_SYNC: "${{ github.ref_name }}"
       REPOSITORY_NAME: "${{ vars.GITLAB_PROJECT_NAME }}"
     secrets:
-      GIT_MIRROR_TOKEN: ${{ secrets.GIT_MIRROR_TOKEN }}
+      GIT_MIRROR_TOKEN: "${{ secrets.GIT_MIRROR_TOKEN }}"
