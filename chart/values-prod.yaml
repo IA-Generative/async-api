@@ -470,11 +470,11 @@ workers:
         - name: LOG_LEVEL
           value: "INFO"
         - name: S3_ENDPOINT_URL
-          value: "https://brio-staging-api-data.s3.fr-par.scw.cloud"
+          value: "https://brio-prod-api-data.s3.fr-par.scw.cloud"
         - name: S3_REGION_NAME
           value: "fr-par"
         - name: S3_BUCKET_NAME
-          value: "brio-staging-api-data"
+          value: "brio-prod-api-data"
 
       envFromSecret:
         - secretRef:
