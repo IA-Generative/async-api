@@ -1,116 +1,147 @@
 """Documentation par service pour ReDoc.
 
-Chaque service expose :
-- `TAG` : nom du tag OpenAPI (affiché comme section dans ReDoc)
-- `SHORT_DESCRIPTION` : phrase courte (utilisée dans la page catalogue)
-- `DESCRIPTION` : description markdown complète (inputs, outputs, exemples),
-  généralement chargée depuis `content/<service_name>.md`
+Les pages de documentation sont des fichiers markdown dans `content/`. Les liens
+entre pages (catalogue, feuille de route, page de chaque service) sont injectés
+au chargement via des placeholders résolus automatiquement :
 
-Pour ajouter un nouveau service :
-1. Créer un fichier `content/<service_name>.md` avec la description markdown
-2. Créer un fichier `<service_name>.py` dans ce dossier qui définit
-   `TAG`, `SHORT_DESCRIPTION` et `DESCRIPTION` (chargé depuis le .md)
-3. L'importer dans `SERVICE_DOCS` ci-dessous
+- `{catalog_anchor}` — page catalogue
+- `{roadmap_anchor}` — page feuille de route
+- `{<service_name>_anchor}` — page d'un service déclaré dans `SERVICES`
+
+Pour ajouter un service :
+1. Créer `content/<name>.md` avec sa documentation
+2. Ajouter une entrée `ServiceDoc(...)` dans `SERVICES`
 """
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
-
-from api.docs.services import generation_render
+from typing import TypedDict
 
 CONTENT_DIR = Path(__file__).parent / "content"
-
-SERVICE_DOCS = [
-    generation_render,
-]
-
 CATALOG_TAG = "Catalogue des services"
 ROADMAP_TAG = "Feuille de route"
 
+# Tout placeholder de la forme `{<nom>_anchor}` non substitué indique une ancre
+# cassée : on lève plutôt que de laisser un placeholder visible dans la doc.
+_UNRESOLVED_ANCHOR_RE = re.compile(r"\{(\w+_anchor)\}")
+_TAG_SLUG_RE = re.compile(r"[^\w]+")
+
+
+@dataclass(frozen=True)
+class ServiceDoc:
+    """Métadonnées d'un service exposé dans la doc OpenAPI / ReDoc.
+
+    `name` sert à la fois de nom de fichier markdown (`content/<name>.md`)
+    et de clé pour le placeholder d'ancre (`{<name>_anchor}`).
+    """
+
+    name: str
+    tag: str
+    short_description: str
+
+    @property
+    def anchor(self) -> str:
+        return _redoc_anchor(self.tag)
+
+    @property
+    def markdown_filename(self) -> str:
+        return f"{self.name}.md"
+
+
+SERVICES: tuple[ServiceDoc, ...] = (
+    ServiceDoc(
+        name="generation_render",
+        tag="Remplissage de templates",
+        short_description=(
+            "Remplit un template `.odt` avec un dictionnaire de données "
+            "(publipostage programmatique, basé sur Relatorio)."
+        ),
+    ),
+)
+
+
+class _OpenApiTag(TypedDict):
+    name: str
+    description: str
+
 
 def _redoc_anchor(tag: str) -> str:
-    """Transforme un nom de tag en ancre ReDoc.
+    """Convertit un nom de tag en ancre ReDoc.
 
-    ReDoc génère des ancres au format `#tag/<slug>` où le slug remplace les
-    caractères non-alphanumériques par des tirets.
+    ReDoc génère des ancres `#tag/<slug>` où le slug remplace tout caractère
+    non-alphanumérique par un tiret.
     """
-    slug = re.sub(r"[^\w]+", "-", tag).strip("-")
-    return f"#tag/{slug}"
+    return f"#tag/{_TAG_SLUG_RE.sub('-', tag).strip('-')}"
 
 
-def _build_catalog_description() -> str:
-    """Construit la page catalogue listant tous les services avec liens."""
-    lines = [
-        "Liste des services exposés par l'API. Chaque service a sa propre page de "
-        "documentation avec son contrat d'interface (body, result), ses exemples et "
-        "ses limites.\n",
-        "| Service | Description | Documentation |",
-        "|---|---|---|",
+def _anchor_substitutions() -> dict[str, str]:
+    """Mapping placeholder → URL pour toutes les ancres connues."""
+    return {
+        "catalog_anchor": _redoc_anchor(CATALOG_TAG),
+        "roadmap_anchor": _redoc_anchor(ROADMAP_TAG),
+        **{f"{svc.name}_anchor": svc.anchor for svc in SERVICES},
+    }
+
+
+def _render_markdown(filename: str, **extras: str) -> str:
+    """Charge `content/<filename>` et substitue ses placeholders.
+
+    Substitue tous les placeholders d'ancre déclarés (`{*_anchor}`) plus les
+    `extras` éventuels (fragments contextuels comme un tableau dynamique).
+    Lève si un placeholder `{*_anchor}` reste non résolu, pour éviter qu'un
+    lien cassé ne se retrouve silencieusement dans la doc publiée.
+    """
+    text = (CONTENT_DIR / filename).read_text(encoding="utf-8")
+    for placeholder, value in {**_anchor_substitutions(), **extras}.items():
+        text = text.replace(f"{{{placeholder}}}", value)
+    unresolved = sorted(set(_UNRESOLVED_ANCHOR_RE.findall(text)))
+    if unresolved:
+        raise RuntimeError(f"{filename}: placeholders d'ancre non résolus : {unresolved}")
+    return text
+
+
+def _services_table() -> str:
+    """Tableau markdown listant tous les services (utilisé dans la page catalogue)."""
+    return "\n".join(
+        [
+            "| Service | Description | Documentation |",
+            "|---|---|---|",
+            *(f"| `{svc.tag}` | {svc.short_description} | [Voir la doc]({svc.anchor}) |" for svc in SERVICES),
+        ],
+    )
+
+
+def build_openapi_tags() -> list[_OpenApiTag]:
+    """Tags OpenAPI : catalogue, feuille de route, puis une page par service."""
+    return [
+        {
+            "name": CATALOG_TAG,
+            "description": _render_markdown("catalog.md", services_table=_services_table()),
+        },
+        {
+            "name": ROADMAP_TAG,
+            "description": _render_markdown("roadmap.md"),
+        },
+        *({"name": svc.tag, "description": _render_markdown(svc.markdown_filename)} for svc in SERVICES),
     ]
-    for mod in SERVICE_DOCS:
-        short = getattr(mod, "SHORT_DESCRIPTION", "—")
-        anchor = _redoc_anchor(mod.TAG)
-        lines.append(f"| `{mod.TAG}` | {short} | [Voir la doc]({anchor}) |")
-    lines.append("")
-    lines.append(
-        "> Tous ces services sont consommables via la route générique "
-        "`POST /v1/services/{service}/tasks` (voir section **Tasks**). "
-        "Le nom du service à utiliser dans le path est indiqué dans la doc de chaque service.",
-    )
-    lines.append("")
-    lines.append(
-        f"Pour voir l'ordre de mise à disposition des prochains services, consultez la "
-        f"[**Feuille de route**]({_redoc_anchor(ROADMAP_TAG)}).",
-    )
-    return "\n".join(lines)
-
-
-def _build_roadmap_description() -> str:
-    """Construit la page de feuille de route des services.
-
-    Charge le markdown depuis `content/roadmap.md` et y injecte les ancres
-    dynamiques vers les pages de services.
-    """
-    template = (CONTENT_DIR / "roadmap.md").read_text(encoding="utf-8")
-    return template.replace(
-        "{generation_render_anchor}",
-        _redoc_anchor(generation_render.TAG),
-    )
-
-
-def build_openapi_tags() -> list[dict]:
-    """Retourne les tags OpenAPI à ajouter pour tous les services documentés.
-
-    Ordre : catalogue → feuille de route → pages détaillées par service.
-    """
-    tags = [
-        {"name": CATALOG_TAG, "description": _build_catalog_description()},
-        {"name": ROADMAP_TAG, "description": _build_roadmap_description()},
-    ]
-    tags.extend({"name": mod.TAG, "description": mod.DESCRIPTION} for mod in SERVICE_DOCS)
-    return tags
 
 
 def service_tag_names() -> list[str]:
-    """Retourne la liste des noms de tags de services (pour x-tagGroups).
-
-    Inclut la page catalogue en premier, puis les pages détaillées par service.
-    La feuille de route est exposée séparément via `roadmap_tag_names()` pour
-    constituer son propre groupe dans ReDoc.
-    """
-    return [CATALOG_TAG, *(mod.TAG for mod in SERVICE_DOCS)]
+    """Tags du groupe services (catalogue + une entrée par service)."""
+    return [CATALOG_TAG, *(svc.tag for svc in SERVICES)]
 
 
 def roadmap_tag_names() -> list[str]:
-    """Retourne la liste des tags du groupe feuille de route (pour x-tagGroups)."""
+    """Tags du groupe feuille de route (exposé séparément dans ReDoc)."""
     return [ROADMAP_TAG]
 
 
 def catalog_anchor() -> str:
-    """Retourne l'ancre markdown vers la page catalogue (utilisée dans les autres tags)."""
+    """Ancre markdown vers la page catalogue."""
     return _redoc_anchor(CATALOG_TAG)
 
 
 def roadmap_anchor() -> str:
-    """Retourne l'ancre markdown vers la page feuille de route."""
+    """Ancre markdown vers la page feuille de route."""
     return _redoc_anchor(ROADMAP_TAG)
