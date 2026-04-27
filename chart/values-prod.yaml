@@ -21,6 +21,16 @@ api:
     # Overrides the image tag whose default is the chart appVersion.
     tag: "v0.3.1"
 
+  # -- Writable /tmp for SpooledTemporaryFile during multipart uploads
+  # (required because readOnlyRootFilesystem is enabled by default).
+  # @section -- Api
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+  volumes:
+    - name: tmp
+      emptyDir: {}
+
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
@@ -30,7 +40,8 @@ api:
     className: "nginx"
     # -- Additional ingress annotations.
     # @section -- Api
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "25m"
     # -- Additional ingress labels.
     # @section -- Api
     labels: {}
@@ -44,7 +55,7 @@ api:
           portNumber: null
         # -- Name of the host record.
         # @section -- Api
-        name: "async-api.sdid-app-hp.cpin.numerique-interieur.com"
+        name: "async-api.sdid-app.cpin.numerique-interieur.com"
         # -- Path type of the host record.
         # @section -- Api
         pathType: "Prefix"
@@ -54,11 +65,33 @@ api:
     # -- Enable TLS configuration.
     # @section -- Api
     tls: []
+    # - secretName: domain.local-tls
+    #   hosts:
+    #   - domain.local
+
   # -- Image credentials configuration.
   # @section -- Api
   imagePullSecrets:
     - name: "registry-pull-secret"
       create: false
+
+  metrics:
+    enabled: true
+    service:
+      type: ClusterIP
+      port: 8080           # int — Service.spec.ports[].port requires int32
+      targetPort: 8000     # int — Service.spec.ports[].targetPort
+      portName: metrics    # string — used as the port name, referenced by ServiceMonitor
+      labels: {}
+      annotations: {}
+    serviceMonitor:
+      enabled: true
+      labels: {}
+      annotations: {}
+      endpoints:
+        - path: /internal/metrics
+          honorLabels: true
+          interval: 30s
 
   resources:
     requests:
@@ -80,6 +113,8 @@ api:
 # @section -- Workers
 
 workers:
+  # -- Example worker demonstrating deployment with KEDA autoscaling
+  # @section -- Workers
   # -- Worker name (used for labeling and naming resources)
   # @section -- Workers
   - name: consumer
@@ -242,6 +277,11 @@ workers:
         # -- Target queue length to trigger scaling
         # @section -- Workers
         queueLength: "5"
+        # TriggerAuthentication: KEDA se connecte à RabbitMQ depuis son propre namespace,
+        # il ne peut pas résoudre le short hostname. Le secret référencé doit contenir
+        # l'URL AMQP complète avec FQDN, ex:
+        #   amqp://user:pass@async-api-rabbitmq-headless.NAMESPACE.svc.cluster.local:5672/
+        # Ajouter la clé BROKER_URL_FQDN dans le secret Vault staging/db-config.
         triggerAuth:
           enabled: true
           secretName: "async-api-db-config"
@@ -299,10 +339,10 @@ workers:
     metrics:
       # -- Enable metrics endpoint
       # @section -- Workers
-      enabled: false
+      enabled: true
       # -- Metrics endpoint path
       # @section -- Workers
-      path: "/metrics"
+      path: "/internal/metrics"
       # -- ServiceMonitor configuration for Prometheus Operator
       # @section -- Workers
       serviceMonitor:
@@ -319,6 +359,275 @@ workers:
         # @section -- Workers
         annotations: {}
 
+  - name: generation-render-worker
+    # -- Worker type: 'deployment' for long-running processes, 'job' for one-time tasks
+    # @section -- Workers
+    type: deployment
+    # -- Enable/disable this worker
+    # @section -- Workers
+    enabled: true
+    # -- Deployment-specific configuration (only used when type=deployment)
+    # @section -- Workers
+    deploymentSpec:
+      # -- Container image configuration
+      # @section -- Workers
+      image:
+        # -- Image repository
+        # @section -- Workers
+        repository: "harbor.sdid.cpin.numerique-interieur.com/asyncapi/generation-render-worker"
+        # -- Image tag
+        # @section -- Workers
+        tag: "v0.3.16"
+        # -- Image pull policy
+        # @section -- Workers
+        pullPolicy: IfNotPresent
+
+      # -- Number of replicas (ignored if KEDA autoscaling is enabled)
+      # @section -- Workers
+      replicas: 1
+
+      # -- Image pull secrets for the worker
+      # @section -- Workers
+      imagePullSecrets:
+        - name: "registry-pull-secret"
+
+      # -- Container ports configuration
+      # @section -- Workers
+      ports:
+        # -- Health check port (used for probes and health service)
+        # @section -- Workers
+        health: 8083
+        metrics: 8080
+
+      # -- Resource limits and requests
+      # @section -- Workers
+      resources:
+        requests:
+          # -- CPU request
+          # @section -- Workers
+          cpu: "100m"
+          # -- Memory request
+          # @section -- Workers
+          memory: "128Mi"
+        limits:
+          # -- CPU limit
+          # @section -- Workers
+          cpu: "500m"
+          # -- Memory limit
+          # @section -- Workers
+          memory: "512Mi"
+
+      # -- Health check probes configuration
+      # @section -- Workers
+      probes:
+        # -- Startup probe configuration
+        # @section -- Workers
+        startupProbe:
+          httpGet:
+            path: "/health"
+            port: 8083
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+          successThreshold: 1
+        # -- Readiness probe configuration
+        # @section -- Workers
+        readinessProbe:
+          httpGet:
+            path: "/ready"
+            port: 8083
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # -- Liveness probe configuration
+        # @section -- Workers
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+
+      # -- Environment variables as key-value pairs
+      # @section -- Workers
+      env:
+        - name: IN_QUEUE_NAME
+          value: "generation_render_queue_in"
+        - name: OUT_QUEUE_NAME
+          value: "generation_render_queue_out"
+        - name: WORKER_CONCURRENCY
+          value: "3"
+        - name: HEALTH_CHECK_HOST
+          value: "0.0.0.0"
+        - name: HEALTH_CHECK_PORT
+          value: "8083"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: S3_ENDPOINT_URL
+          value: "https://brio-staging-api-data.s3.fr-par.scw.cloud"
+        - name: S3_REGION_NAME
+          value: "fr-par"
+        - name: S3_BUCKET_NAME
+          value: "brio-staging-api-data"
+
+      envFromSecret:
+        - secretRef:
+            name: async-api-s3
+
+      # -- Volume mounts for writable /tmp (required by Relatorio for template rendering)
+      # @section -- Workers
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+
+      # -- Volumes (emptyDir for /tmp since readOnlyRootFilesystem is enabled)
+      # @section -- Workers
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+      # -- Container security context
+      # @section -- Workers
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+
+      # -- Pod security context
+      # @section -- Workers
+      podSecurityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+
+    # -- KEDA autoscaler configuration
+    # @section -- Workers
+    kedaAutoscaler:
+      # -- Enable KEDA autoscaling
+      # @section -- Workers
+      enabled: false
+      # -- Minimum number of replicas
+      # @section -- Workers
+      minReplicaCount: 1
+      # -- Maximum number of replicas
+      # @section -- Workers
+      maxReplicaCount: 10
+      # -- Number of replicas when no workload (0 to scale to zero)
+      # @section -- Workers
+      idleReplicaCount: 0
+      # -- Polling interval in seconds
+      # @section -- Workers
+      pollingInterval: 30
+      # -- Cooldown period in seconds
+      # @section -- Workers
+      cooldownPeriod: 300
+
+      # -- RabbitMQ trigger configuration for KEDA
+      # @section -- Workers
+      rabbitmq:
+        # -- Queue name to monitor
+        # @section -- Workers
+        queueName: "generation_render_queue_in"
+        # -- Target queue length to trigger scaling
+        # @section -- Workers
+        queueLength: "5"
+        # TriggerAuthentication: KEDA se connecte à RabbitMQ depuis son propre namespace,
+        # il ne peut pas résoudre le short hostname. Le secret référencé doit contenir
+        # l'URL AMQP complète avec FQDN, ex:
+        #   amqp://user:pass@async-api-rabbitmq-headless.NAMESPACE.svc.cluster.local:5672/
+        # Ajouter la clé BROKER_URL_FQDN dans le secret Vault staging/db-config.
+        triggerAuth:
+          enabled: true
+          secretName: "async-api-db-config"
+          secretKey: "BROKER_URL_FQDN"
+
+      # -- Advanced scaling behavior configuration
+      # @section -- Workers
+      behavior:
+        scaleDown:
+          # -- Stabilization window for scale down
+          # @section -- Workers
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 50
+              periodSeconds: 60
+        scaleUp:
+          # -- Stabilization window for scale up
+          # @section -- Workers
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+            - type: Pods
+              value: 4
+              periodSeconds: 15
+          selectPolicy: Max
+
+      # -- Fallback configuration when KEDA fails
+      # @section -- Workers
+      fallback:
+        # -- Number of failures before fallback
+        # @section -- Workers
+        failureThreshold: 3
+        # -- Number of replicas during fallback
+        # @section -- Workers
+        replicas: 2
+
+    # -- RBAC configuration
+    # @section -- Workers
+    role:
+      # -- Create ServiceAccount and RBAC resources
+      # @section -- Workers
+      create: true
+      # -- RBAC rules for the worker
+      # @section -- Workers
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "configmaps", "secrets"]
+          verbs: ["get", "list", "watch"]
+
+    # -- Prometheus metrics configuration
+    # @section -- Workers
+    metrics:
+      # -- Enable metrics endpoint
+      # @section -- Workers
+      enabled: true
+      # -- Metrics endpoint path
+      # @section -- Workers
+      path: "/internal/metrics"
+      # -- ServiceMonitor configuration for Prometheus Operator
+      # @section -- Workers
+      serviceMonitor:
+        # -- Create ServiceMonitor for Prometheus
+        # @section -- Workers
+        enabled: true
+        # -- Scrape interval
+        # @section -- Workers
+        interval: 30s
+        # -- Additional labels for ServiceMonitor
+        # @section -- Workers
+        labels: {}
+        # -- Additional annotations for ServiceMonitor
+        # @section -- Workers
+        annotations: {}
+
+# SQL Exporter configuration
+# @section -- SQL Exporter
+sqlexporter:
+  enabled: true
+  
 # RabbitMQ configuration
 # @section -- RabbitMQ
 rabbitmq:
@@ -354,12 +663,23 @@ rabbitmq:
       memory: 2Gi
   # -- RabbitMQ service configuration
   metrics:
-    # -- Enable RabbitMQ metrics
-    enabled: false
-    # -- RabbitMQ metrics service monitor
+    # -- Enable RabbitMQ metrics (auto-enables rabbitmq_prometheus plugin)
+    enabled: true
+    # -- RabbitMQ metrics port
+    port: 15692
+    # -- RabbitMQ metrics ServiceMonitor (requires Prometheus Operator)
     serviceMonitor:
-      # -- Enable RabbitMQ metrics service monitor
-      enabled: false
+      # -- Create ServiceMonitor for Prometheus scraping
+      enabled: true
+      # -- Scrape interval
+      interval: 30s
+      # -- Scrape timeout
+      scrapeTimeout: 10s
+      # -- Metrics path (use /metrics/detailed or /metrics/per-object for more detail)
+      path: /metrics
+      # -- Extra labels (set e.g. release: kube-prometheus-stack if your Prometheus requires it)
+      labels: {}
+      annotations: {}
 
 # PostgreSQL CNPG configuration
 # @section -- PostgreSQL
@@ -397,35 +717,41 @@ vaultSecrets:
         name: async-api-db-appuser
         type: kubernetes.io/basic-auth
       mount: asyncapi
-      vaultPath: prod/psql-user
+      vaultPath: production/psql-user
       type: kv-v2
     - destination:
         name: async-api-db-superuser
         type: kubernetes.io/basic-auth
       mount: asyncapi
-      vaultPath: prod/psql-admin
+      vaultPath: production/psql-admin
       type: kv-v2
     - destination:
         name: async-api-rabbitmq-credentials
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: prod/rabbitmq
+      vaultPath: production/rabbitmq
       type: kv-v2
     - destination:
         name: async-api-db-config
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: prod/db-config
+      vaultPath: production/db-config
       type: kv-v2
     - destination:
         name: async-api-s3
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: prod/s3-credentials
+      vaultPath: production/s3-credentials
       type: kv-v2
     - destination:
         name: async-api-admin-credentials
         type: kubernetes.io/opaque
       mount: asyncapi
-      vaultPath: prod/admin-credentials
+      vaultPath: production/admin-credentials
+      type: kv-v2
+    - destination:
+        name: llm-hub-credentials
+        type: kubernetes.io/opaque
+      mount: asyncapi
+      vaultPath: production/llm-hub-credentials
       type: kv-v2
