@@ -1,17 +1,19 @@
 
-Service de remplissage de templates `.odt` (publipostage programmatique).
+Service de remplissage de templates `.odt` et `.docx` (publipostage programmatique).
 
-Envoie un template `.odt` contenant des placeholders Relatorio, fournit
-un dictionnaire de données, et récupère un `.odt` rempli.
+Envoie un template contenant des placeholders, fournit un dictionnaire de données,
+et récupère un fichier rempli dans le même format que l'entrée.
 
-## Template d'exemple
+## Templates d'exemple
 
-Pour démarrer rapidement, téléchargez le template de référence et son jeu de données :
+Pour démarrer rapidement, téléchargez un template de référence et son jeu de données :
 
-- [**test_template.odt**](/docs-examples/generation-render/test_template.odt) — template couvrant
-  les 3 types de balises Relatorio (simple, conditionnelle `if`, itérative `for`)
+- [**test_template.odt**](/docs-examples/generation-render/test_template.odt) — template ODT
+  couvrant les 3 types de balises Relatorio (simple, conditionnelle `if`, itérative `for`)
+- [**test_template.docx**](/docs-examples/generation-render/test_template.docx) — template DOCX
+  couvrant les 3 mêmes constructions en syntaxe Jinja2 (placeholder, `{% if %}`, `{% for %}`)
 - [**test_data.json**](/docs-examples/generation-render/test_data.json) — jeu de données
-  correspondant pour remplir le template :
+  commun aux deux templates :
 
 ```json
 {
@@ -30,19 +32,43 @@ Pour démarrer rapidement, téléchargez le template de référence et son jeu d
 3. Polling du résultat via `GET /v1/services/generation-render/tasks/{task_id}`
    OU réception d'un callback HTTP (si `callback.url` est fourni à la soumission)
 
-## Syntaxe du template ODT
+Le format de sortie correspond au format d'entrée : un template `.odt` produit un
+`.odt`, un template `.docx` produit un `.docx`. Le moteur de rendu est sélectionné
+automatiquement à partir de l'extension du fichier uploadé.
 
-Le service utilise [Relatorio](https://relatorio.readthedocs.io/) (basé sur Genshi).
+## Syntaxe ODT (Relatorio)
+
+Les templates `.odt` utilisent [Relatorio](https://relatorio.readthedocs.io/) (basé sur Genshi).
 
 - **Placeholders simples** : `<variable>` (via Insert → Field → Placeholder → Text dans LibreOffice)
 - **Conditionnel** : lien hypertexte `relatorio://if test="condition"` ... `relatorio:///if`
 - **Boucle** : lien hypertexte `relatorio://for each="item in items"` ... `relatorio:///for`
 
+## Syntaxe DOCX (Jinja2)
+
+Les templates `.docx` utilisent [docxtpl](https://docxtpl.readthedocs.io/), qui s'appuie
+sur la syntaxe [Jinja2](https://jinja.palletsprojects.com/). Les balises sont saisies
+directement dans le document Word.
+
+- **Placeholders simples** : `{{ variable }}`
+- **Conditionnel** : `{% if condition %}` ... `{% endif %}`
+- **Boucle** : `{% for item in items %}` ... `{% endfor %}`
+
+Exemple de contenu pour le `test_template.docx` :
+
+```jinja
+Bonjour {{ nom }}, vous habitez à {{ ville }}.
+{% if is_admin %}Vous êtes administrateur.{% endif %}
+Liste des éléments :
+{% for item in items %}- {{ item }}
+{% endfor %}
+```
+
 ## Body de la requête
 
 | Champ | Type | Description |
 |---|---|---|
-| `body.file_id` | string | Identifiant du template uploadé via `/storage/upload` |
+| `body.file_id` | string | Identifiant du template uploadé via `/storage/upload` (`.odt` ou `.docx`) |
 | `body.data` | object | Dictionnaire clé-valeur des variables à injecter |
 | `callback` (optionnel) | object | Callback HTTP appelé à la fin du traitement |
 
@@ -108,5 +134,5 @@ champ `warnings` liste les clés manquantes. La tâche passe quand même en
 ## Limites
 
 - Taille maximum du template : 25 MB (contrainte ingress + parser)
-- Format de sortie : `.odt` uniquement
+- Formats supportés : `.odt` (Relatorio) et `.docx` (Jinja2 via docxtpl)
 - Les valeurs dans `data` peuvent être : `string`, `boolean`, `array`
