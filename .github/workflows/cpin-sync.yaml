@@ -37,14 +37,12 @@ jobs:
   sync:
     needs:
     - path-filter
-    uses: ArnaudTA/actions/.github/workflows/sync.yaml@v1
+    uses: dnum-mi/fabnum-cicd/.github/workflows/sync-cpin.yml@v0
     if: ${{ needs.path-filter.outputs.charts == 'true' || needs.path-filter.outputs.api == 'true' || needs.path-filter.outputs.ci == 'true' || needs.path-filter.outputs.widgets == 'true' }}
-    secrets:
-      GITLAB_PROJECT_NAME: "${{ vars.GITLAB_PROJECT_NAME }}"
-      GITLAB_MIRROR_ID: "${{ vars.GITLAB_MIRROR_ID }}"
-      GITLAB_TRIGGER_TOKEN: "${{ secrets.GITLAB_TRIGGER_TOKEN }}"
-      GITLAB_URL: "${{ secrets.GITLAB_URL }}"
     with:
-      BRANCH_NAME: ${{ github.ref_name }}
-      SYNC_ALL: false
-      WAIT: false
+      GITLAB_URL: "${{ secrets.GITLAB_URL }}"
+      GIT_MIRROR_PROJECT_ID: "${{ vars.GITLAB_MIRROR_ID }}"
+      BRANCH_TO_SYNC: ${{ github.ref_name }}
+      REPOSITORY_NAME: "${{ vars.GITLAB_PROJECT_NAME }}"
+    secrets:
+      GIT_MIRROR_TOKEN: ${{ secrets.GIT_MIRROR_TOKEN }}
